@@ -1,6 +1,6 @@
 /* Copyright 2012 William Woodall and John Harrison */
 #include <algorithm>
-
+#include "io/message/message-base.h"
 #if !defined(_WIN32) && !defined(__OpenBSD__) && !defined(__FreeBSD__)
 #include <alloca.h>
 #endif
@@ -218,6 +218,47 @@ size_t Serial::write(const uint8_t * data, size_t size)
 }
 
 size_t Serial::write_(const uint8_t * data, size_t length) { return pimpl_->write(data, length); }
+// 在 serial.cc 中仿照 PhySerial::Write 实现
+size_t Serial::write(const srm::message::Packet& data) {
+  short size = static_cast<short>(data.Size());
+  std::vector<uint8_t> buffer(sizeof(short) + size);
+
+  // 拷贝长度前缀 (小端序)
+  std::memcpy(buffer.data(), &size, sizeof(short));
+  // 拷贝负载数据
+  std::memcpy(buffer.data() + sizeof(short), data.Ptr(), size);
+
+  // 调用原有的底层 write 接口
+  return this->write(buffer.data(), buffer.size());
+}
+
+bool Serial::readPacket(srm::message::Packet& data, short expected_size) {
+  // 1. 读取长度前缀 (2 字节)
+  uint8_t size_header[2];
+  size_t header_bytes = this->read(size_header, 2);
+
+  if (header_bytes < 2) return false;
+
+  short received_size = *reinterpret_cast<short*>(size_header);
+
+  // 2. 长度校验：如果收到的长度不符合预期，刷新输入缓冲区并退出
+  if (received_size != expected_size) {
+    this->flushInput(); // 对应 unix.cc 中的 tcflush
+    return false;
+  }
+
+  // 3. 读取负载数据
+  std::vector<uint8_t> payload(received_size);
+  size_t payload_bytes = this->read(payload.data(), received_size);
+
+  if (payload_bytes == static_cast<size_t>(received_size)) {
+    data.Resize(received_size);
+    std::memcpy(data.Ptr(), payload.data(), received_size);
+    return true;
+  }
+
+  return false;
+}
 
 void Serial::setPort(const string & port)
 {

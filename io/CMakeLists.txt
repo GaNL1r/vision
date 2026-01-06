@@ -13,6 +13,12 @@ add_library(io STATIC
     cboard.cpp
     dm_imu/dm_imu.cpp
     gimbal/gimbal.cpp
+        message/buffer.h
+        message/factory.h
+        message/tags.h
+        message/info.h
+        message/message-base.h
+        message/packet.h
 )
 
 # hikrobot

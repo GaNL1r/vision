@@ -297,6 +297,8 @@ public:
     */
   std::string read(size_t size = 1);
 
+  bool Serial::readPacket(srm::message::Packet& data, short expected_size);
+
   /*! Reads in a line or until a given delimiter has been processed.
     *
     * Reads from the serial port until a single line has been read.
@@ -386,6 +388,8 @@ public:
     * \throw serial::IOException
     */
   size_t write(const std::string & data);
+
+  size_t Serial::write(const srm::message::Packet& data);
 
   /*! Sets the serial port identifier.
     *

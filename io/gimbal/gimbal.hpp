@@ -11,6 +11,8 @@
 
 #include "serial/serial.h"
 #include "tools/thread_safe_queue.hpp"
+#include "io/message/packet.h"  // 引入 srm 的 Packet
+#include "io/message/info.h"    // 引入 GimbalSend 等结构定义
 
 namespace io
 {
@@ -81,9 +83,9 @@ public:
 
   void send(io::VisionToGimbal VisionToGimbal);
 
+
 private:
   serial::Serial serial_;
-
   std::thread thread_;
   std::atomic<bool> quit_ = false;
   mutable std::mutex mutex_;
@@ -99,6 +101,9 @@ private:
   bool read(uint8_t * buffer, size_t size);
   void read_thread();
   void reconnect();
+
+  short send_gimbal_id_, send_shoot_id_;
+  short recv_gimbal_id_, recv_shoot_id_;
 };
 
 }  // namespace io
