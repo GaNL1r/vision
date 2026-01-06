@@ -10,6 +10,7 @@
 
 #include "io/command.hpp"
 #include "io/socketcan.hpp"
+#include "serial/serial.h"
 #include "tools/logger.hpp"
 #include "tools/thread_safe_queue.hpp"
 
@@ -65,6 +66,19 @@ private:
   void callback(const can_frame & frame);
 
   std::string read_yaml(const std::string & config_path);
+
+  void read_thread();
+
+  // 通信成员
+  serial::Serial serial_;
+  std::thread thread_;
+  std::atomic<bool> quit_{false};
+  mutable std::mutex mutex_;
+
+  // ID 配置 (从 YAML 读取)
+  short imu_packet_id_;
+  short status_packet_id_;
+
 };
 
 }  // namespace io
