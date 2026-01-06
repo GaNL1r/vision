@@ -47,7 +47,9 @@
 #include <vector>
 
 #define THROW(exceptionClass, message) throw exceptionClass(__FILE__, __LINE__, (message))
-
+namespace srm::message {
+class Packet;
+}
 namespace serial
 {
 
@@ -297,7 +299,7 @@ public:
     */
   std::string read(size_t size = 1);
 
-  bool Serial::readPacket(srm::message::Packet& data, short expected_size);
+  bool readPacket(srm::message::Packet& data, short expected_size);
 
   /*! Reads in a line or until a given delimiter has been processed.
     *
@@ -389,7 +391,7 @@ public:
     */
   size_t write(const std::string & data);
 
-  size_t Serial::write(const srm::message::Packet& data);
+  size_t write(const srm::message::Packet& data);
 
   /*! Sets the serial port identifier.
     *
