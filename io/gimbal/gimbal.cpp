@@ -106,8 +106,8 @@ void Gimbal::send(
   try {
     srm::message::Packet packet;
     srm::message::GimbalSend g_data;
-    g_data.yaw = yaw;
-    g_data.pitch = pitch;
+    g_data.yaw = yaw*180.0/M_PI;
+    g_data.pitch = pitch*180.0/M_PI;
 
     srm::message::ShootSend s_data;
     s_data.fire_flag = fire ? 1 : 0;
@@ -122,7 +122,7 @@ void Gimbal::send(
     std::memcpy(frame.data(), &total_size, sizeof(short));
     std::memcpy(frame.data() + sizeof(short), packet.data(), total_size);
 
-    serial_.write(frame.data(), frame.size());
+    if (control) serial_.write(frame.data(), frame.size());
   } catch (const std::exception & e) {
     tools::logger()->warn("[Gimbal] Failed to write serial: {}", e.what());
   }

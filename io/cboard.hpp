@@ -57,7 +57,7 @@ private:
   };
 
   tools::ThreadSafeQueue<IMUData> queue_;  // 必须在can_之前初始化，否则存在死锁的可能
-  SocketCAN can_;
+  //SocketCAN can_;
   IMUData data_ahead_;
   IMUData data_behind_;
 
@@ -78,6 +78,8 @@ private:
   // ID 配置 (从 YAML 读取)
   short imu_packet_id_;
   short status_packet_id_;
+  short send_gimbal_id_; // 发送给云台控制的 ID
+  short send_shoot_id_;  // 发送给射击控制的 ID
 
 };
 

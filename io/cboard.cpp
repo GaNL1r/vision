@@ -11,14 +11,16 @@ CBoard::CBoard(const std::string & config_path)
 : mode(Mode::idle),
   shoot_mode(ShootMode::left_shoot),
   bullet_speed(0),
-  queue_(5000),
-  can_(read_yaml(config_path), std::bind(&CBoard::callback, this, std::placeholders::_1))
+  queue_(5000)
+  //can_(read_yaml(config_path), std::bind(&CBoard::callback, this, std::placeholders::_1))
 // 注意: callback的运行会早于Cboard构造函数的完成
 {
   auto yaml = tools::load(config_path);
   auto com_port = tools::read<std::string>(yaml, "cboard_port");
   imu_packet_id_ = tools::read<short>(yaml, "receive.gimbal"); // 对应 GimbalReceive
   status_packet_id_ = tools::read<short>(yaml, "receive.shoot"); // 对应 ShootReceive
+  send_gimbal_id_ = tools::read<short>(yaml, "send.gimbal"); // 对应 GimbalSend
+  send_shoot_id_ = tools::read<short>(yaml, "send.shoot");   // 对应 ShootSend
   try {
     serial_.setPort(com_port);
     serial_.open();
@@ -93,22 +95,38 @@ Eigen::Quaterniond CBoard::imu_at(std::chrono::steady_clock::time_point timestam
 
 void CBoard::send(Command command) const
 {
-  can_frame frame;
-  frame.can_id = send_canid_;
-  frame.can_dlc = 8;
-  frame.data[0] = (command.control) ? 1 : 0;
-  frame.data[1] = (command.shoot) ? 1 : 0;
-  frame.data[2] = (int16_t)(command.yaw * 1e4) >> 8;
-  frame.data[3] = (int16_t)(command.yaw * 1e4);
-  frame.data[4] = (int16_t)(command.pitch * 1e4) >> 8;
-  frame.data[5] = (int16_t)(command.pitch * 1e4);
-  frame.data[6] = (int16_t)(command.horizon_distance * 1e4) >> 8;
-  frame.data[7] = (int16_t)(command.horizon_distance * 1e4);
-
   try {
-    can_.write(&frame);
+    srm::message::Packet packet;
+
+    // 1. 打包云台数据 (ID + Payload)
+    srm::message::GimbalSend g_send;
+    g_send.yaw = command.yaw*180/M_PI;
+    g_send.pitch = command.pitch*180/M_PI;
+    packet.Write(send_gimbal_id_);
+    packet.Write(g_send);
+
+    // 2. 打包射击数据
+    srm::message::ShootSend s_send;
+    s_send.fire_flag = command.shoot ? 1 : 0;
+    packet.Write(send_shoot_id_);
+    packet.Write(s_send);
+
+    // 3. 构建物理帧格式: [TotalSize (short)] + [Data (Packet)]
+    short total_size = static_cast<short>(packet.size());
+    std::vector<uint8_t> frame;
+    frame.resize(sizeof(short) + total_size);
+
+    // 填充长度前缀
+    std::memcpy(frame.data(), &total_size, sizeof(short));
+    // 填充 Packet 内容
+    std::memcpy(frame.data() + sizeof(short), packet.data(), total_size);
+
+    // 4. 通过串口发送
+    // 注意：由于 send 是 const，serial_ 需要声明为 mutable 或者这里去掉 const
+    if (command.control) const_cast<serial::Serial&>(serial_).write(frame.data(), frame.size());
+
   } catch (const std::exception & e) {
-    tools::logger()->warn("{}", e.what());
+    tools::logger()->error("[CBoard] Send failed: {}", e.what());
   }
 }
 
