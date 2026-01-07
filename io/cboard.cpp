@@ -465,11 +465,12 @@ void CBoard::send(Command command) const
   auto yaw_ = static_cast<float>(command.yaw);
   auto pitch_ = static_cast<float>(command.pitch);
   yaw_ = -(yaw_ * 180.0 / M_PI+90);
+  if (yaw_ == -90) yaw_ = 0;
   pitch_ = (pitch_ * 180.0 / M_PI);
   tools::logger()->info("send:{},{}",yaw_,pitch_);
   auto Is_fire = command.shoot;
   const srm::message::GimbalSend gimbal_send{yaw_, pitch_};
-  const srm::message::ShootSend shoot_send{Is_fire};
+  const srm::message::ShootSend shoot_send{1};
   message_->WriteData(gimbal_send);
   message_->WriteData(shoot_send);
   message_->Send();
