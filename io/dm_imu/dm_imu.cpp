@@ -59,46 +59,35 @@ void DM_IMU::init_serial()
 
 void DM_IMU::get_imu_data_thread()
 {
+  const size_t target_size = sizeof(srm::message::GimbalReceive);
+  std::vector<uint8_t> buffer(target_size);
+
   while (!stop_thread_) {
-    if (!serial_.isOpen()) {
-      tools::logger()->warn("In get_imu_data_thread,imu serial port unopen");
-    }
+    if (serial_.isOpen() && serial_.available() >= target_size) {
+      // 1. 读取原始串口字节
+      serial_.read(buffer.data(), target_size);
 
-    serial_.read((uint8_t *)(&receive_data.FrameHeader1), 4);
+      // 2. 将数据转存到 stm-message 的 Packet 中
+      srm::message::Packet packet;
+      packet.insert(packet.end(), buffer.begin(), buffer.end());
 
-    if (
-      receive_data.FrameHeader1 == 0x55 && receive_data.flag1 == 0xAA &&
-      receive_data.slave_id1 == 0x01 && receive_data.reg_acc == 0x01)
+      // 3. 使用 Packet 的 Read 接口解析到结构体
+      // 这会自动处理字节流到 float/int 的转换
+      if (packet.Read(imu_raw_data_)) {
+        auto timestamp = std::chrono::steady_clock::now();
 
-    {
-      serial_.read((uint8_t *)(&receive_data.accx_u32), 57 - 4);
+        // 4. 保持原有接口：将 RPY 转换为四元数
+        // 注意：这里假设 imu_raw_data_.yaw/pitch/roll 是欧拉角
+        Eigen::Quaterniond q =
+            Eigen::AngleAxisd(imu_raw_data_.yaw * M_PI / 180.0, Eigen::Vector3d::UnitZ()) *
+            Eigen::AngleAxisd(imu_raw_data_.pitch * M_PI / 180.0, Eigen::Vector3d::UnitY()) *
+            Eigen::AngleAxisd(imu_raw_data_.roll * M_PI / 180.0, Eigen::Vector3d::UnitX());
 
-      if (tools::get_crc16((uint8_t *)(&receive_data.FrameHeader1), 16) == receive_data.crc1) {
-        data.accx = *((float *)(&receive_data.accx_u32));
-        data.accy = *((float *)(&receive_data.accy_u32));
-        data.accz = *((float *)(&receive_data.accz_u32));
+        q.normalize();
+        queue_.push({q, timestamp});
       }
-      if (tools::get_crc16((uint8_t *)(&receive_data.FrameHeader2), 16) == receive_data.crc2) {
-        data.gyrox = *((float *)(&receive_data.gyrox_u32));
-        data.gyroy = *((float *)(&receive_data.gyroy_u32));
-        data.gyroz = *((float *)(&receive_data.gyroz_u32));
-      }
-      if (tools::get_crc16((uint8_t *)(&receive_data.FrameHeader3), 16) == receive_data.crc3) {
-        data.roll = *((float *)(&receive_data.roll_u32));
-        data.pitch = *((float *)(&receive_data.pitch_u32));
-        data.yaw = *((float *)(&receive_data.yaw_u32));
-        // tools::logger()->debug(
-        //   "yaw: {:.2f}, pitch: {:.2f}, roll: {:.2f}", static_cast<double>(data.yaw),
-        //   static_cast<double>(data.pitch), static_cast<double>(data.roll));
-      }
-      auto timestamp = std::chrono::steady_clock::now();
-      Eigen::Quaterniond q = Eigen::AngleAxisd(data.yaw * M_PI / 180, Eigen::Vector3d::UnitZ()) *
-                             Eigen::AngleAxisd(data.pitch * M_PI / 180, Eigen::Vector3d::UnitY()) *
-                             Eigen::AngleAxisd(data.roll * M_PI / 180, Eigen::Vector3d::UnitX());
-      q.normalize();
-      queue_.push({q, timestamp});
     } else {
-      tools::logger()->info("[DM_IMU] failed to get correct data");
+      std::this_thread::sleep_for(std::chrono::microseconds(500));
     }
   }
 }

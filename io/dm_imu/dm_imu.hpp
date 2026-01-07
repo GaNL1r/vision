@@ -10,7 +10,9 @@
 #include <initializer_list>
 #include <iostream>
 #include <thread>
-
+#include "serial/serial.h"
+#include "io/message/packet.h"
+#include "io/message/info.h" // °üº¬ GimbalReceive
 #include "tools/thread_safe_queue.hpp"
 
 namespace io
@@ -89,6 +91,9 @@ private:
   std::atomic<bool> stop_thread_{false};
   IMU_Receive_Frame receive_data{};  //receive data frame
   IMU_Data data{};
+  srm::message::GimbalReceive imu_raw_data_{};
+  short send_gimbal_id_, send_shoot_id_;
+  short recv_gimbal_id_, recv_shoot_id_;
 };
 
 }  // namespace io
