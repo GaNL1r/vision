@@ -24,7 +24,7 @@
 
 const std::string keys =
   "{help h usage ? | | 输出命令行参数说明}"
-  "{@config-path   | | yaml配置文件路径 }";
+  "{@config-path   | configs/standard3.yaml | yaml配置文件路径 }";
 
 using namespace std::chrono_literals;
 
@@ -68,6 +68,7 @@ int main(int argc, char * argv[])
     while (!exiter.exit()) {
       if (mode.load() == io::Mode::auto_aim) {
         camera.read(img, t);
+        //cv::flip(img, img, 0);
         detector.push(img, t);
       } else
         continue;
