@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "io/command.hpp"
-#include "io/socketcan.hpp"
-#include "serial/serial.h"
+#include "io/message/info.h"
+#include "io/message/message-base.h"
 #include "tools/logger.hpp"
 #include "tools/thread_safe_queue.hpp"
 
@@ -44,12 +44,15 @@ public:
   double ft_angle;  //无人机专有
 
   CBoard(const std::string & config_path);
+  ~CBoard();
 
   Eigen::Quaterniond imu_at(std::chrono::steady_clock::time_point timestamp);
 
   void send(Command command) const;
 
 private:
+  std::atomic<bool> quit_ = false;
+  std::thread thread_;
   struct IMUData
   {
     Eigen::Quaterniond q;
@@ -60,27 +63,16 @@ private:
   //SocketCAN can_;
   IMUData data_ahead_;
   IMUData data_behind_;
+  srm::message::GimbalReceive gimbal_receive{};
+  srm::message::ShootReceive shoot_receive{};
+  srm::message::ReiceivePacket* receive_packet;
+  std::shared_ptr<srm::message::BaseMessage> message_;
 
   int quaternion_canid_, bullet_speed_canid_, send_canid_;
 
-  void callback(const can_frame & frame);
+  void callback();
 
   std::string read_yaml(const std::string & config_path);
-
-  void read_thread();
-
-  // 通信成员
-  serial::Serial serial_;
-  std::thread thread_;
-  std::atomic<bool> quit_{false};
-  mutable std::mutex mutex_;
-
-  // ID 配置 (从 YAML 读取)
-  short imu_packet_id_;
-  short status_packet_id_;
-  short send_gimbal_id_; // 发送给云台控制的 ID
-  short send_shoot_id_;  // 发送给射击控制的 ID
-
 };
 
 }  // namespace io

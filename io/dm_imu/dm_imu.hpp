@@ -1,18 +1,13 @@
 #ifndef IO__Dm_Imu_HPP
 #define IO__Dm_Imu_HPP
 
-#include <math.h>
-#include <serial/serial.h>
-
 #include <Eigen/Geometry>
-#include <array>
-#include <fstream>
-#include <initializer_list>
-#include <iostream>
 #include <thread>
-#include "serial/serial.h"
-#include "io/message/packet.h"
-#include "io/message/info.h" // °üº¬ GimbalReceive
+
+#include "io/message/message-base.h"
+# include "io/message/info.h"
+# include "io/message/packet.h"
+
 #include "tools/thread_safe_queue.hpp"
 
 namespace io
@@ -81,19 +76,19 @@ private:
 
   void init_serial();
   void get_imu_data_thread();
-
-  serial::Serial serial_;
+  std::shared_ptr<srm::message::BaseMessage> message_;
+  //serial::Serial serial_;
   std::thread rec_thread_;
 
   tools::ThreadSafeQueue<IMUData> queue_;
   IMUData data_ahead_, data_behind_;
 
   std::atomic<bool> stop_thread_{false};
-  IMU_Receive_Frame receive_data{};  //receive data frame
-  IMU_Data data{};
-  srm::message::GimbalReceive imu_raw_data_{};
-  short send_gimbal_id_, send_shoot_id_;
-  short recv_gimbal_id_, recv_shoot_id_;
+  //IMU_Receive_Frame receive_data{};  //receive data frame
+  //IMU_Data data{};
+  srm::message::ReiceivePacket* receive_packet;
+  srm::message::GimbalReceive gimbal_receive{};
+  srm::message::ShootReceive shoot_receive{};
 };
 
 }  // namespace io
