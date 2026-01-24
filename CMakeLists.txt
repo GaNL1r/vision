@@ -30,7 +30,13 @@ target_link_libraries(cboard_test ${OpenCV_LIBS} fmt::fmt tools)
 
 # add_executable(auto_aim_test examples/auto_aim_test.cpp)
 # target_link_libraries(auto_aim_test ${OpenCV_LIBS} openvino::runtime fmt::fmt yaml-cpp auto_aim auto_outpost tools io)
-add_executable(armor_detector_video examples/armor_detector_video.cpp)
+add_executable(armor_detector_video examples/armor_detector_video.cpp
+        io/message/buffer.h
+        io/message/factory.h
+        io/message/info.h
+        io/message/packet.h
+        io/message/tags.h
+        io/message/message-base.h)
 target_link_libraries(armor_detector_video ${OpenCV_LIBS} fmt::fmt yaml-cpp auto_aim tools)
 
 # add_executable(auto_buff_test examples/auto_buff_test.cpp)
