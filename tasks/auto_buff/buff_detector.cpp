@@ -131,6 +131,7 @@ std::optional<PowerRune> Buff_Detector::detect(cv::Mat & bgr_img)
   /// 处理未获得的情况
 
   if (results.empty()) {
+    std::cout << "No buff" << std::endl;
     handle_lose();
     return std::nullopt;
   }

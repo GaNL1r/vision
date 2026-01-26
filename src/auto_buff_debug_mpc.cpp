@@ -20,7 +20,7 @@
 // 定义命令行参数
 const std::string keys =
   "{help h usage ? | | 输出命令行参数说明}"
-  "{@config-path   | | yaml配置文件路径 }";
+  "{@config-path   | configs/standard3.yaml | yaml配置文件路径 }";
 
 int main(int argc, char * argv[])
 {
@@ -45,7 +45,7 @@ int main(int argc, char * argv[])
   auto_buff::Buff_Detector detector(config_path);
   auto_buff::Solver solver(config_path);
   auto_buff::SmallTarget target;
-  // auto_buff::BigTarget target;
+  //auto_buff::BigTarget target;
   auto_buff::Aimer aimer(config_path);
 
   cv::Mat img;
@@ -54,6 +54,7 @@ int main(int argc, char * argv[])
 
   while (!exiter.exit()) {
     camera.read(img, t);
+    //cv::flip(img, img, -1);
     q = gimbal.q(t);
     auto gs = gimbal.state();
     // recorder.record(img, q, t);

@@ -464,15 +464,12 @@ void CBoard::send(Command command) const
 {
   auto yaw_ = static_cast<float>(command.yaw);
   auto pitch_ = static_cast<float>(command.pitch);
-  yaw_ = -(yaw_ * 180.0 / M_PI+90);
-  if (yaw_ == -90) yaw_ = 0;
-  //if (yaw_ < 180 || yaw_ > 180) yaw_ = 0;
-  pitch_ = (pitch_ * 180.0 / M_PI);
-  //if (pitch_ < 180 || pitch_ > 180) pitch_ = 0;
-  tools::logger()->info("send:{},{}",yaw_,pitch_);
+  yaw_ = yaw_ * 180.0 / M_PI;
+  pitch_ = pitch_ * 180.0 / M_PI;
+  // tools::logger()->info("send:{},{}",yaw_,pitch_);
   auto Is_fire = command.shoot;
   const srm::message::GimbalSend gimbal_send{yaw_, pitch_};
-  const srm::message::ShootSend shoot_send{1};
+  const srm::message::ShootSend shoot_send{Is_fire ? 1 : 0};
   message_->WriteData(gimbal_send);
   message_->WriteData(shoot_send);
   message_->Send();
@@ -494,8 +491,8 @@ void CBoard::callback()
       receive_packet->mode = gimbal_receive.mode;
       receive_packet->color = gimbal_receive.color;
       receive_packet->bullet_speed = shoot_receive.bullet_speed;
-      //tools::logger()->info("Received packet: yaw= {:.1f} pitch= {:.1f} roll= {:.1f} mode= {} color= {} bullet_speed= {:.1f}",
-      //gimbal_receive.yaw, gimbal_receive.pitch, gimbal_receive.roll,gimbal_receive.mode, gimbal_receive.color, shoot_receive.bullet_speed);
+      // tools::logger()->info("Received packet: yaw= {:.1f} pitch= {:.1f} roll= {:.1f} mode= {} color= {} bullet_speed= {:.1f}",
+      // gimbal_receive.yaw, gimbal_receive.pitch, gimbal_receive.roll,gimbal_receive.mode, gimbal_receive.color, shoot_receive.bullet_speed);
 
       // 解算yaw, pitch, roll为四元数
       auto yaw_ = receive_packet->yaw * M_PI / 180;
