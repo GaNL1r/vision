@@ -14,9 +14,9 @@
 namespace srm::message {
 
 /**
- * @brief ×Ö½ÚÁ÷Êı¾İ°üÀà
+ * @brief å­—èŠ‚æµæ•°æ®åŒ…ç±»
  * @details
- * ²ÉÓÃÍøÂçÍ¨ĞÅÖĞµÄÊ×Î²¶¨½ç·¨£¬ÎªÁËÄÜ¹»Õı³£¶ÁÈ¡£¬±ØĞëÒªÖªµÀÃ¿¸öÊı¾İµÄ´óĞ¡£¬Ò²¾ÍÊÇÀàĞÍ£¬Òò´ËÒª¸øÃ¿¸öÊı¾İÒ»¸öid£¬Õâ¸öid½«»áºÍÀàĞÍ°ó¶¨
+ * é‡‡ç”¨ç½‘ç»œé€šä¿¡ä¸­çš„é¦–å°¾å®šç•Œæ³•ï¼Œä¸ºäº†èƒ½å¤Ÿæ­£å¸¸è¯»å–ï¼Œå¿…é¡»è¦çŸ¥é“æ¯ä¸ªæ•°æ®çš„å¤§å°ï¼Œä¹Ÿå°±æ˜¯ç±»å‹ï¼Œå› æ­¤è¦ç»™æ¯ä¸ªæ•°æ®ä¸€ä¸ªidï¼Œè¿™ä¸ªidå°†ä¼šå’Œç±»å‹ç»‘å®š
  */
 class Packet : public std::vector<char> {
 public:
@@ -25,45 +25,45 @@ public:
     return reinterpret_cast<char*>(const_cast<std::add_pointer_t<std::remove_cv_t<T>>>(ptr));
   }
   /**
-   * @brief Ğ´ÈëÊı¾İ
-   * @param [in] data ÒªĞ´ÈëµÄÊı¾İ
-   * @return ÊÇ·ñĞ´Èë³É¹¦
+   * @brief å†™å…¥æ•°æ®
+   * @param [in] data è¦å†™å…¥çš„æ•°æ®
+   * @return æ˜¯å¦å†™å…¥æˆåŠŸ
    */
   template <typename T>
   bool Write(T REF_IN data) {
-    /// Éæ¼°ÄÚ´æ»ò´«Êä£¬ÓÃchar£¬½«ÕâÒ»²¿·ÖÊı¾İÒÔ×Ö½ÚĞÎÊ½Ğ´ÈëpacketÄ©Î²
+    /// æ¶‰åŠå†…å­˜æˆ–ä¼ è¾“ï¼Œç”¨charï¼Œå°†è¿™ä¸€éƒ¨åˆ†æ•°æ®ä»¥å­—èŠ‚å½¢å¼å†™å…¥packetæœ«å°¾
     insert(this->end(), change(&data), change(&data) + sizeof(data));
     return true;
   }
 
   /**
-   * @brief ¶ÁÈ¡Êı¾İ
-   * @param [out] data ´«³ö¶ÁÈ¡µÄÊı¾İ
-   * @return ÊÇ·ñ¶ÁÈ¡³É¹¦
+   * @brief è¯»å–æ•°æ®
+   * @param [out] data ä¼ å‡ºè¯»å–çš„æ•°æ®
+   * @return æ˜¯å¦è¯»å–æˆåŠŸ
    */
   template <typename T>
   bool Read(T REF_OUT data) {
-    /// Èç¹ûÔ½½ç
+    /// å¦‚æœè¶Šç•Œ
     if (this->begin() + read_offset_ + sizeof(data) > this->end()) {
       return false;
     }
-    /// ²»ÖªµÀ»»³ÉÕâÑù»á²»»á³öÎÊÌâ£¬¸Ğ¾õÓ¦¸Ã²»»á³ö
-    /// ÄÚ´æ¸´ÖÆÊı¾İ
+    /// ä¸çŸ¥é“æ¢æˆè¿™æ ·ä¼šä¸ä¼šå‡ºé—®é¢˜ï¼Œæ„Ÿè§‰åº”è¯¥ä¸ä¼šå‡º
+    /// å†…å­˜å¤åˆ¶æ•°æ®
     std::copy_n(this->begin() + read_offset_, sizeof(data), change(&data));
     read_offset_ += sizeof(data);
     return true;
   }
 
-  /// ´óĞ´£¬Î´¸²¸Ç
+  /// å¤§å†™ï¼Œæœªè¦†ç›–
   void Clear() {
     this->clear();
     read_offset_ = 0;
   }
 
   /**
-   * @brief ÖØĞÂµ÷Õû°ü´óĞ¡
-   * @param n ĞÂµÄ°ü´óĞ¡
-   * @warning read_offset_Ò²»á±»ÖØÖÃ
+   * @brief é‡æ–°è°ƒæ•´åŒ…å¤§å°
+   * @param n æ–°çš„åŒ…å¤§å°
+   * @warning read_offset_ä¹Ÿä¼šè¢«é‡ç½®
    */
   void Resize(const size_t n) {
     this->resize(n);
@@ -76,7 +76,7 @@ public:
   char* Ptr() { return this->data(); };
 
 private:
-  long read_offset_{};  ///< ¶ÁÈ¡Ö¸ÕëÆ«ÒÆÁ¿
+  long read_offset_{};  ///< è¯»å–æŒ‡é’ˆåç§»é‡
 };
 
 };  // namespace srm::message

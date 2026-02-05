@@ -15,9 +15,9 @@ using namespace std::chrono_literals;
 
 const std::string keys =
   "{help h usage ? |     | 输出命令行参数说明    }"
-  "{d              | 3.0 | Target距离(m)       }"
+  "{d              | 5.0 | Target距离(m)       }"
   "{w              | 5.0 | Target角速度(rad/s) }"
-  "{@config-path   |     | yaml配置文件路径     }";
+  "{@config-path   |configs/hero.yaml| yaml配置文件路径     }";
 
 int main(int argc, char * argv[])
 {
@@ -52,19 +52,19 @@ int main(int argc, char * argv[])
     nlohmann::json data;
     data["t"] = tools::delta_time(std::chrono::steady_clock::now(), t0);
 
-    data["gimbal_yaw"] = gs.yaw;
+    data["gimbal_yaw"] = gs.yaw*180/M_PI;
     data["gimbal_yaw_vel"] = gs.yaw_vel;
-    data["gimbal_pitch"] = gs.pitch;
+    data["gimbal_pitch"] = gs.pitch*180/M_PI;
     data["gimbal_pitch_vel"] = gs.pitch_vel;
 
-    data["target_yaw"] = plan.target_yaw;
-    data["target_pitch"] = plan.target_pitch;
+    data["target_yaw"] = plan.target_yaw*180/M_PI;
+    data["target_pitch"] = plan.target_pitch*180/M_PI;
 
-    data["plan_yaw"] = plan.yaw;
+    data["plan_yaw"] = plan.yaw*180/M_PI;
     data["plan_yaw_vel"] = plan.yaw_vel;
     data["plan_yaw_acc"] = plan.yaw_acc;
 
-    data["plan_pitch"] = plan.pitch;
+    data["plan_pitch"] = plan.pitch*180/M_PI;
     data["plan_pitch_vel"] = plan.pitch_vel;
     data["plan_pitch_acc"] = plan.pitch_acc;
 

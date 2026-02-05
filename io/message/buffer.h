@@ -11,9 +11,9 @@
 
 namespace srm {
 /**
- * @brief ´øËøÑ­»·¶ÓÁĞ£¬×Ô¶¯¶ªÆú¾ÉÊı¾İ
- * @tparam T Êı¾İÀàĞÍ
- * @tparam N Ñ­»·¶ÓÁĞ´óĞ¡
+ * @brief å¸¦é”å¾ªç¯é˜Ÿåˆ—ï¼Œè‡ªåŠ¨ä¸¢å¼ƒæ—§æ•°æ®
+ * @tparam T æ•°æ®ç±»å‹
+ * @tparam N å¾ªç¯é˜Ÿåˆ—å¤§å°
  */
 template <typename T, size_t N>
 class Buffer final {
@@ -22,20 +22,20 @@ public:
   ~Buffer() = default;
 
 private:
-  std::array<T, N> data_;  ///< Êı¾İ´æ´¢
-  size_t head_{};          ///< Í·Ö¸Õë
-  size_t tail_{};          ///< Î²Ö¸Õë
-  bool full_{};            ///< ÊÇ·ñ¶ÓÂú
-  std::mutex lock_;        ///< ²Ù×÷Ëø
+  std::array<T, N> data_;  ///< æ•°æ®å­˜å‚¨
+  size_t head_{};          ///< å¤´æŒ‡é’ˆ
+  size_t tail_{};          ///< å°¾æŒ‡é’ˆ
+  bool full_{};            ///< æ˜¯å¦é˜Ÿæ»¡
+  std::mutex lock_;        ///< æ“ä½œé”
 
 public:
   /**
-   * @brief ·ÅÈëÊı¾İ£¬¶ÓÁĞÒÑÂúÊ±½«¸²¸Ç¾ÉÊı¾İ
-   * @param [in] obj ´ıÒÆ¶¯Êı¾İ
+   * @brief æ”¾å…¥æ•°æ®ï¼Œé˜Ÿåˆ—å·²æ»¡æ—¶å°†è¦†ç›–æ—§æ•°æ®
+   * @param [in] obj å¾…ç§»åŠ¨æ•°æ®
    */
   void Push(T FWD_IN obj) {
-    std::lock_guard lock{lock_};          ///< ÔÚÉúÃüÖÜÆÚÖĞÉÏËø
-    data_[tail_] = std::forward<T>(obj);  /// ¿ÉÄÜÔÚobjÊÇÓÒÖµµÄÊ±ºòÓĞÓÅ»¯°Ñ
+    std::lock_guard lock{lock_};          ///< åœ¨ç”Ÿå‘½å‘¨æœŸä¸­ä¸Šé”
+    data_[tail_] = std::forward<T>(obj);  /// å¯èƒ½åœ¨objæ˜¯å³å€¼çš„æ—¶å€™æœ‰ä¼˜åŒ–æŠŠ
     ++tail_ %= N;
     if (full_) {
       ++head_ %= N;
@@ -44,9 +44,9 @@ public:
   }
 
   /**
-   * @brief È¡³öÊı¾İ
-   * @param [out] obj Êı¾İÄ¿±êÎ»ÖÃ
-   * @return ¶ÓÁĞÊÇ·ñÎª¿Õ
+   * @brief å–å‡ºæ•°æ®
+   * @param [out] obj æ•°æ®ç›®æ ‡ä½ç½®
+   * @return é˜Ÿåˆ—æ˜¯å¦ä¸ºç©º
    */
   bool Pop(T REF_OUT obj) {
     std::lock_guard lock{lock_};
@@ -60,8 +60,8 @@ public:
   }
 
   /**
-   * @brief ÅĞ¶ÏÊÇ·ñÎª¿Õ
-   * @return ¶ÓÁĞÊÇ·ñÎª¿Õ
+   * @brief åˆ¤æ–­æ˜¯å¦ä¸ºç©º
+   * @return é˜Ÿåˆ—æ˜¯å¦ä¸ºç©º
    */
   [[nodiscard]] bool Empty() const { return head_ == tail_ && !full_; }
 

@@ -9,10 +9,10 @@
 #include <unordered_map>
 
 /**
- * @brief ´´½¨º¯ÊıÎªÃüÃû¿Õ¼äÖĞµÄ»ùÀàÆôÓÃ×Ô¶¯×¢²á¹¤³§Ä£Ê½
- * @param _namespace ÃüÃû¿Õ¼ä
- * @param _type »ùÀàÃû³Æ
- * @param _func ´´½¨µÄº¯ÊıÃû
+ * @brief åˆ›å»ºå‡½æ•°ä¸ºå‘½åç©ºé—´ä¸­çš„åŸºç±»å¯ç”¨è‡ªåŠ¨æ³¨å†Œå·¥å‚æ¨¡å¼
+ * @param _namespace å‘½åç©ºé—´
+ * @param _type åŸºç±»åç§°
+ * @param _func åˆ›å»ºçš„å‡½æ•°å
  */
 #define enable_factory(_namespace, _type, _func)                                                             \
   namespace _namespace {                                                                                     \
@@ -22,8 +22,8 @@
 
 namespace srm {
 /**
- * @brief Êµ¼Ê»ùÀàËùÊô×¢²áĞÅÏ¢»ùÀà
- * @tparam B Êµ¼Ê»ùÀàÃû³Æ
+ * @brief å®é™…åŸºç±»æ‰€å±æ³¨å†Œä¿¡æ¯åŸºç±»
+ * @tparam B å®é™…åŸºç±»åç§°
  */
 template <class B>
 class RegistryBase {
@@ -31,23 +31,23 @@ class RegistryBase {
   virtual ~RegistryBase() = default;
 
   /**
-   * @brief Ô¤Áô×ÓÀà¹¹Ôì½Ó¿Ú
-   * @return Ö¸Ïò¶ÔÓ¦×ÓÀà¶ÔÏóµÄ»ùÀàÖ¸Õë
+   * @brief é¢„ç•™å­ç±»æ„é€ æ¥å£
+   * @return æŒ‡å‘å¯¹åº”å­ç±»å¯¹è±¡çš„åŸºç±»æŒ‡é’ˆ
    */
   virtual B *Create() = 0;
 };
 
 /**
- * @brief Êµ¼Ê»ùÀàËùÊô¹¤³§Àà
- * @tparam B Êµ¼Ê»ùÀàÃû³Æ
- * @details ×Ü¸Ğ¾õÓĞµã³éÏó¹¤³§µÄÎ¶µÀ
+ * @brief å®é™…åŸºç±»æ‰€å±å·¥å‚ç±»
+ * @tparam B å®é™…åŸºç±»åç§°
+ * @details æ€»æ„Ÿè§‰æœ‰ç‚¹æŠ½è±¡å·¥å‚çš„å‘³é“
  */
 template <class B>
 class Factory final {
  public:
   /**
-   * @brief »ñÈ¡¹¤³§ÀàÎ¨Ò»ÊµÀı
-   * @return Î¨Ò»ÊµÀıµÄÒıÓÃ
+   * @brief è·å–å·¥å‚ç±»å”¯ä¸€å®ä¾‹
+   * @return å”¯ä¸€å®ä¾‹çš„å¼•ç”¨
    */
   [[nodiscard]] static Factory &Instance() {
     static Factory factory;
@@ -55,43 +55,43 @@ class Factory final {
   }
 
   /**
-   * @brief Ïò¹¤³§Àà×¢²áĞÅÏ¢
-   * @param type_name Êµ¼Ê×ÓÀàËùÊô±êÊ¶·û
-   * @param registry Êµ¼Ê×ÓÀàËùÊô×¢²áĞÅÏ¢×ÓÀàÖ¸Õë
+   * @brief å‘å·¥å‚ç±»æ³¨å†Œä¿¡æ¯
+   * @param type_name å®é™…å­ç±»æ‰€å±æ ‡è¯†ç¬¦
+   * @param registry å®é™…å­ç±»æ‰€å±æ³¨å†Œä¿¡æ¯å­ç±»æŒ‡é’ˆ
    */
   void Register(std::string &&type_name, RegistryBase<B> *registry) { registry_[std::move(type_name)] = registry; }
 
   /**
-   * @brief Êµ¼Ê¹¹Ôì×ÓÀà¶ÔÏó
-   * @param type_name Êµ¼Ê×ÓÀàËùÊô±êÊ¶·û
-   * @return Ö¸ÏòÊµ¼Ê×ÓÀà¶ÔÏóµÄ»ùÀàÖ¸Õë
+   * @brief å®é™…æ„é€ å­ç±»å¯¹è±¡
+   * @param type_name å®é™…å­ç±»æ‰€å±æ ‡è¯†ç¬¦
+   * @return æŒ‡å‘å®é™…å­ç±»å¯¹è±¡çš„åŸºç±»æŒ‡é’ˆ
    */
   [[nodiscard]] B *Create(const std::string &type_name) {
     return registry_.contains(type_name) ? registry_[type_name]->Create() : nullptr;
   }
 
  private:
-  /// @note ¸ÃÀàÓÃÓÚÊ¶±ğÀà¼Ì³Ğ¹ØÏµ£¬¹Ê²ÉÓÃµ¥ÀıÄ£Ê½
+  /// @note è¯¥ç±»ç”¨äºè¯†åˆ«ç±»ç»§æ‰¿å…³ç³»ï¼Œæ•…é‡‡ç”¨å•ä¾‹æ¨¡å¼
   Factory() = default;
   ~Factory() = default;
 
-  /// ×ÓÀàĞÅÏ¢×¢²á±í
+  /// å­ç±»ä¿¡æ¯æ³¨å†Œè¡¨
   std::unordered_map<std::string, RegistryBase<B> *> registry_;
 };
 
 /**
- * @brief Êµ¼Ê×ÓÀàËùÊô×¢²áĞÅÏ¢×ÓÀà
- * @tparam B »ùÀàÃû³Æ
- * @tparam S ×ÓÀàÃû³Æ
+ * @brief å®é™…å­ç±»æ‰€å±æ³¨å†Œä¿¡æ¯å­ç±»
+ * @tparam B åŸºç±»åç§°
+ * @tparam S å­ç±»åç§°
  * @details
- * ÒòÎªÊ¹ÓÃµÄÊ±ºòÊÇÔÚSÔÚÉùÃ÷µÄÊ±ºòÊ¹ÓÃµÄ£¬Òò´Ë£¬´ËÊ±SµÄÀàĞÍ»¹²»ÍêÕû£¬ÎŞ·¨ÅĞ¶ÏSÊÇ·ñÊÇBµÄÅÉÉúÀà£¬Òò´Ë²»ÄÜÓÃderived_fromÏŞ¶¨
+ * å› ä¸ºä½¿ç”¨çš„æ—¶å€™æ˜¯åœ¨Såœ¨å£°æ˜çš„æ—¶å€™ä½¿ç”¨çš„ï¼Œå› æ­¤ï¼Œæ­¤æ—¶Sçš„ç±»å‹è¿˜ä¸å®Œæ•´ï¼Œæ— æ³•åˆ¤æ–­Sæ˜¯å¦æ˜¯Bçš„æ´¾ç”Ÿç±»ï¼Œå› æ­¤ä¸èƒ½ç”¨derived_fromé™å®š
  */
 template <class B, class S>
 class RegistrySub final : public RegistryBase<B> {
  public:
   /**
-   * @brief ¹¹Ôì×¢²áĞÅÏ¢²¢Ïò¹¤³§×¢²á×ÔÉí
-   * @param type_name Êµ¼Ê×ÓÀà±êÊ¶·û
+   * @brief æ„é€ æ³¨å†Œä¿¡æ¯å¹¶å‘å·¥å‚æ³¨å†Œè‡ªèº«
+   * @param type_name å®é™…å­ç±»æ ‡è¯†ç¬¦
    */
   explicit RegistrySub(std::string &&type_name) {
     static_assert(std::is_base_of<B, S>());
@@ -99,9 +99,9 @@ class RegistrySub final : public RegistryBase<B> {
   }
 
   /**
-   * @brief ¹¹ÔìÊµ¼Ê×ÓÀà¶ÔÏó
-   * @return »ùÀàÖ¸ÕëĞÎÊ½µÄ×ÓÀà¶ÔÏó
-   * @details ÒòÎªRegistrySubÒÑ¾­ÊÇ×îÖÕÅÉÉúÀàÁË£¬Òò´ËËûµÄº¯ÊıÒ²ÊÇ×îÖÕ¼Ì³ĞµÄ
+   * @brief æ„é€ å®é™…å­ç±»å¯¹è±¡
+   * @return åŸºç±»æŒ‡é’ˆå½¢å¼çš„å­ç±»å¯¹è±¡
+   * @details å› ä¸ºRegistrySubå·²ç»æ˜¯æœ€ç»ˆæ´¾ç”Ÿç±»äº†ï¼Œå› æ­¤ä»–çš„å‡½æ•°ä¹Ÿæ˜¯æœ€ç»ˆç»§æ‰¿çš„
    */
   [[nodiscard]] B *Create() override { return new S(); }
 };

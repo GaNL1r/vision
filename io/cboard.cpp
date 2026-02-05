@@ -466,7 +466,7 @@ void CBoard::send(Command command) const
   auto pitch_ = static_cast<float>(command.pitch);
   yaw_ = yaw_ * 180.0 / M_PI;
   pitch_ = pitch_ * 180.0 / M_PI;
-  // tools::logger()->info("send:{},{}",yaw_,pitch_);
+  //tools::logger()->info("send:{:.2f},{:.2f}",yaw_,pitch_);
   auto Is_fire = command.shoot;
   const srm::message::GimbalSend gimbal_send{yaw_, pitch_};
   const srm::message::ShootSend shoot_send{Is_fire ? 1 : 0};
@@ -498,6 +498,7 @@ void CBoard::callback()
       auto yaw_ = receive_packet->yaw * M_PI / 180;
       auto pitch_ = receive_packet->pitch * M_PI / 180;
       auto roll_ = receive_packet->roll * M_PI / 180;
+      //yaw_ = pitch_ = roll_ = 0;
       Eigen::Vector3d ypr(yaw_, pitch_, roll_);
       Eigen::Quaterniond q;
       q = Eigen::AngleAxisd(ypr[0], Eigen::Vector3d::UnitZ()) *
@@ -507,7 +508,7 @@ void CBoard::callback()
       //推入数据队列
       queue_.push({q, timestamp});
       // 打弹模式更新
-      bullet_speed = receive_packet->bullet_speed;
+      bullet_speed = 23;
     }
 
   }

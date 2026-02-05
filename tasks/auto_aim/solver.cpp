@@ -29,10 +29,21 @@ Solver::Solver(const std::string & config_path) : R_gimbal2world_(Eigen::Matrix3
   auto yaml = YAML::LoadFile(config_path);
 
   auto R_gimbal2imubody_data = yaml["R_gimbal2imubody"].as<std::vector<double>>();
-  auto R_camera2gimbal_data = yaml["R_camera2gimbal"].as<std::vector<double>>();
+  //auto R_camera2gimbal_data = yaml["R_camera2gimbal"].as<std::vector<double>>();
   auto t_camera2gimbal_data = yaml["t_camera2gimbal"].as<std::vector<double>>();
+  auto camera_yaw = yaml["camera_yaw"].as<double>()*M_PI/180;
+  auto camera_pitch = yaml["camera_pitch"].as<double>()*M_PI/180;
+  auto camera_roll = yaml["camera_roll"].as<double>()*M_PI/180;
+  Eigen::Matrix3d R_ideal;
+  R_ideal << 0,0,1,-1,0,0,0,-1,0;
+  Eigen::AngleAxisd yawAngle(camera_yaw,Eigen::Vector3d::UnitX());
+  Eigen::AngleAxisd pitchAngle(camera_pitch,Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd rollAngle(camera_roll,Eigen::Vector3d::UnitZ());
+  Eigen::Matrix3d R_offset = (pitchAngle*yawAngle*rollAngle).toRotationMatrix();
+  Eigen::Matrix3d R_rotate = R_ideal*R_offset;
   R_gimbal2imubody_ = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(R_gimbal2imubody_data.data());
-  R_camera2gimbal_ = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(R_camera2gimbal_data.data());
+  //R_camera2gimbal_ = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(R_camera2gimbal_data.data());
+  R_camera2gimbal_ = R_rotate;
   t_camera2gimbal_ = Eigen::Matrix<double, 3, 1>(t_camera2gimbal_data.data());
 
   auto camera_matrix_data = yaml["camera_matrix"].as<std::vector<double>>();

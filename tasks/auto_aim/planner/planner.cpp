@@ -27,9 +27,9 @@ Planner::Planner(const std::string & config_path)
 Plan Planner::plan(Target target, double bullet_speed)
 {
   // 0. Check bullet speed
-  if (bullet_speed < 10 || bullet_speed > 25) {
-    bullet_speed = 22;
-  }
+  // if (bullet_speed < 10 || bullet_speed > 25) {
+  //   bullet_speed = 22;
+  // }
 
   // 1. Predict fly_time
   Eigen::Vector3d xyz;

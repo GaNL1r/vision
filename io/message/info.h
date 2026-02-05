@@ -6,39 +6,39 @@
 #define INFO_H
 namespace srm::message {
 
-/// ·¢ËÍµÄÔÆÌ¨Êı¾İ
+/// å‘é€çš„äº‘å°æ•°æ®
 struct GimbalSend {
-  float yaw;    ///< ¾ø¶Ôyaw½Ç¶È
-  float pitch;  ///< ¾ø¶Ôpitch½Ç¶È
+  float yaw;    ///< ç»å¯¹yawè§’åº¦
+  float pitch;  ///< ç»å¯¹pitchè§’åº¦
 };
 
-/// ½ÓÊÕµÄÔÆÌ¨Êı¾İ
+/// æ¥æ”¶çš„äº‘å°æ•°æ®
 struct GimbalReceive {
-  float yaw;    ///< µ±Ç°¾ø¶Ôyaw½Ç¶È
-  float pitch;  ///< µ±Ç°¾ø¶Ôpitch½Ç¶È
-  float roll;   ///< µ±Ç°¾ø¶Ôroll½Ç¶È
-  int mode;     ///< ×ÔÃéÄ£Ê½ 0×°¼×°å 1Ğ¡ÄÜÁ¿»ú¹Ø 2´óÄÜÁ¿»ú¹Ø
-  int color;    ///< ÑÕÉ« 0ºìÉ« 1À¶É« 2»ÒÉ« 3×ÏÉ«£¬×ÔÉíµÄÑÕÉ«Ò²ÊÇ¿ØÖÆ´«¹ıÀ´µÄ
+  float yaw;    ///< å½“å‰ç»å¯¹yawè§’åº¦
+  float pitch;  ///< å½“å‰ç»å¯¹pitchè§’åº¦
+  float roll;   ///< å½“å‰ç»å¯¹rollè§’åº¦
+  int mode;     ///< è‡ªç„æ¨¡å¼ 0è£…ç”²æ¿ 1å°èƒ½é‡æœºå…³ 2å¤§èƒ½é‡æœºå…³
+  int color;    ///< é¢œè‰² 0çº¢è‰² 1è“è‰² 2ç°è‰² 3ç´«è‰²ï¼Œè‡ªèº«çš„é¢œè‰²ä¹Ÿæ˜¯æ§åˆ¶ä¼ è¿‡æ¥çš„
 };
 
-/// ·¢ËÍ¸ø´òµ¯µÄÊı¾İ
+/// å‘é€ç»™æ‰“å¼¹çš„æ•°æ®
 struct ShootSend {
-  int fire_flag;  ///< ÊÇ·ñ¿ª»ğ
+  int fire_flag;  ///< æ˜¯å¦å¼€ç«
 };
 
-/// ½ÓÊÕµÄ´òµ¯Êı¾İ
+/// æ¥æ”¶çš„æ‰“å¼¹æ•°æ®
 struct ShootReceive {
-  float bullet_speed;  ///< µ¯ËÙ
+  float bullet_speed;  ///< å¼¹é€Ÿ
 };
 
-/// ºÏ²¢µÄ½ÓÊÕÊı¾İ
+/// åˆå¹¶çš„æ¥æ”¶æ•°æ®
 struct ReiceivePacket {
   float yaw;
   float pitch;
   float roll;
-  int mode;            ///< ×ÔÃéÄ£Ê½ 0×°¼×°å 1Ğ¡ÄÜÁ¿»ú¹Ø 2´óÄÜÁ¿»ú¹Ø
-  int color;           ///< ÑÕÉ« 0ºìÉ« 1À¶É« 2»ÒÉ« 3×ÏÉ«
-  float bullet_speed;  ///< µ¯ËÙ
+  int mode;            ///< è‡ªç„æ¨¡å¼ 0è£…ç”²æ¿ 1å°èƒ½é‡æœºå…³ 2å¤§èƒ½é‡æœºå…³
+  int color;           ///< é¢œè‰² 0çº¢è‰² 1è“è‰² 2ç°è‰² 3ç´«è‰²
+  float bullet_speed;  ///< å¼¹é€Ÿ
 };
 
 }  // namespace srm::message

@@ -1,10 +1,10 @@
 #ifndef attr_reader_val
 /**
- * @brief ½«ÀàË½ÓĞ³ÉÔ±±äÁ¿ÉèÖÃÎªÍâ½çÖ»¶Á
- * @param _var Ä¿±ê³ÉÔ±±äÁ¿
- * @param _func ¶ÁÈ¡Æ÷º¯ÊıÃû³Æ
- * @note ´Ë°æ±¾Éú³ÉÖµ´«µİº¯Êı£¬Ê¹ÓÃ attr_reader_ref Éú³ÉÒıÓÃ´«µİº¯Êı
- * @details ÔÚÀà¶¨ÒåµÄ public ²¿·ÖÌí¼ÓÖ¸Áî£¬Éú³É¶ÁÈ¡Æ÷º¯Êı
+ * @brief å°†ç±»ç§æœ‰æˆå‘˜å˜é‡è®¾ç½®ä¸ºå¤–ç•Œåªè¯»
+ * @param _var ç›®æ ‡æˆå‘˜å˜é‡
+ * @param _func è¯»å–å™¨å‡½æ•°åç§°
+ * @note æ­¤ç‰ˆæœ¬ç”Ÿæˆå€¼ä¼ é€’å‡½æ•°ï¼Œä½¿ç”¨ attr_reader_ref ç”Ÿæˆå¼•ç”¨ä¼ é€’å‡½æ•°
+ * @details åœ¨ç±»å®šä¹‰çš„ public éƒ¨åˆ†æ·»åŠ æŒ‡ä»¤ï¼Œç”Ÿæˆè¯»å–å™¨å‡½æ•°
  * @code{.cpp}
  * class Foo() {
  *  public:
@@ -14,7 +14,7 @@
  * }
  * int main() {
  *   Foo bar;
- *   int private_var = bar.PrivateVar();  // µ÷ÓÃº¯Êı»ñÈ¡Öµ
+ *   int private_var = bar.PrivateVar();  // è°ƒç”¨å‡½æ•°è·å–å€¼
  * }
  * @endcode
  */
@@ -24,11 +24,11 @@
 
 #ifndef attr_writer_val
 /**
- * @brief ½«ÀàË½ÓĞ³ÉÔ±±äÁ¿ÉèÖÃÎªÍâ½ç¿ÉĞ´
- * @param _var Ä¿±ê³ÉÔ±±äÁ¿
- * @param _func Éè¶¨Æ÷º¯ÊıÃû³Æ
- * @note ´Ë°æ±¾Éú³ÉÖµ´«µİº¯Êı£¬Ê¹ÓÃ attr_writer_ref Éú³ÉÒıÓÃ´«µİº¯Êı
- * @details ÔÚÀà¶¨ÒåµÄ public ²¿·ÖÌí¼ÓÖ¸Áî£¬Éú³ÉÉè¶¨Æ÷º¯Êı
+ * @brief å°†ç±»ç§æœ‰æˆå‘˜å˜é‡è®¾ç½®ä¸ºå¤–ç•Œå¯å†™
+ * @param _var ç›®æ ‡æˆå‘˜å˜é‡
+ * @param _func è®¾å®šå™¨å‡½æ•°åç§°
+ * @note æ­¤ç‰ˆæœ¬ç”Ÿæˆå€¼ä¼ é€’å‡½æ•°ï¼Œä½¿ç”¨ attr_writer_ref ç”Ÿæˆå¼•ç”¨ä¼ é€’å‡½æ•°
+ * @details åœ¨ç±»å®šä¹‰çš„ public éƒ¨åˆ†æ·»åŠ æŒ‡ä»¤ï¼Œç”Ÿæˆè®¾å®šå™¨å‡½æ•°
  * @code{.cpp}
  * class Foo() {
  *  public:
@@ -38,7 +38,7 @@
  * }
  * int main() {
  *   Foo bar;
- *   bar.SetPrivateVar(42);  // µ÷ÓÃº¯ÊıÉè¶¨Öµ
+ *   bar.SetPrivateVar(42);  // è°ƒç”¨å‡½æ•°è®¾å®šå€¼
  * }
  * @endcode
  */
@@ -51,11 +51,11 @@ _var = value;                    \
 
 #ifndef attr_reader_ref
 /**
- * @brief ½«ÀàË½ÓĞ³ÉÔ±±äÁ¿ÉèÖÃÎªÍâ½çÖ»¶Á
- * @param _var Ä¿±ê³ÉÔ±±äÁ¿
- * @param _func ¶ÁÈ¡Æ÷º¯ÊıÃû³Æ
- * @note ´Ë°æ±¾Éú³ÉÒıÓÃ´«µİº¯Êı£¬Ê¹ÓÃ attr_reader_val Éú³ÉÖµ´«µİº¯Êı
- * @details ÔÚÀà¶¨ÒåµÄ public ²¿·ÖÌí¼ÓÖ¸Áî£¬Éú³É¶ÁÈ¡Æ÷º¯Êı
+ * @brief å°†ç±»ç§æœ‰æˆå‘˜å˜é‡è®¾ç½®ä¸ºå¤–ç•Œåªè¯»
+ * @param _var ç›®æ ‡æˆå‘˜å˜é‡
+ * @param _func è¯»å–å™¨å‡½æ•°åç§°
+ * @note æ­¤ç‰ˆæœ¬ç”Ÿæˆå¼•ç”¨ä¼ é€’å‡½æ•°ï¼Œä½¿ç”¨ attr_reader_val ç”Ÿæˆå€¼ä¼ é€’å‡½æ•°
+ * @details åœ¨ç±»å®šä¹‰çš„ public éƒ¨åˆ†æ·»åŠ æŒ‡ä»¤ï¼Œç”Ÿæˆè¯»å–å™¨å‡½æ•°
  * @code{.cpp}
  * class Foo() {
  *  public:
@@ -65,7 +65,7 @@ _var = value;                    \
  * }
  * int main() {
  *   Foo bar;
- *   std::string private_var = bar.PrivateVar();  // µ÷ÓÃº¯Êı»ñÈ¡Öµ
+ *   std::string private_var = bar.PrivateVar();  // è°ƒç”¨å‡½æ•°è·å–å€¼
  * }
  * @endcode
  */

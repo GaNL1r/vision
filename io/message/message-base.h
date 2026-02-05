@@ -18,77 +18,77 @@ enable_factory(srm::message, BaseMessage, CreateMessage);
 
 namespace srm::message {
 
-/// Êı¾İ°üÍ¨ĞÅÀà
+/// æ•°æ®åŒ…é€šä¿¡ç±»
 class BaseMessage {
  public:
   BaseMessage() = default;
   virtual ~BaseMessage() = default;
 
   /**
-   * @brief ³õÊ¼»¯Í¨ĞÅÄ£¿é
-   * @param type Ä£Ê½(ÎïÀí/Ä£Äâ)
+   * @brief åˆå§‹åŒ–é€šä¿¡æ¨¡å—
+   * @param type æ¨¡å¼(ç‰©ç†/æ¨¡æ‹Ÿ)
    * @param config_path
-   * @return ÊÇ·ñ³õÊ¼»¯³É¹¦
+   * @return æ˜¯å¦åˆå§‹åŒ–æˆåŠŸ
    */
   virtual bool Initialize(const std::string&config_path) { return false; };
 
   /**
-   * @brief ·¢ËÍ»º³åÇøµÄÊı¾İµ½Ä¿±ê
-   * @warning µ÷ÓÃ¸Ãº¯Êı»áÇå¿Õ»º³åÇø£¬Ò»°ãÓÉÖ÷¿ØÀ´µ÷ÓÃ
-   * @return ÊÇ·ñ·¢ËÍ³É¹¦
+   * @brief å‘é€ç¼“å†²åŒºçš„æ•°æ®åˆ°ç›®æ ‡
+   * @warning è°ƒç”¨è¯¥å‡½æ•°ä¼šæ¸…ç©ºç¼“å†²åŒºï¼Œä¸€èˆ¬ç”±ä¸»æ§æ¥è°ƒç”¨
+   * @return æ˜¯å¦å‘é€æˆåŠŸ
    */
   virtual bool Send() { return false; }
 
   /**
-   * @brief ½ÓÄ¿±êÊı¾İµ½»º³åÇø
-   * @warning µ÷ÓÃ¸Ãº¯Êı»á¸²¸Ç»º³åÇø£¬Ò»°ãÓÉÖ÷¿ØÀ´µ÷ÓÃ
-   * @return ÊÇ·ñ½ÓÊÕ³É¹¦
+   * @brief æ¥ç›®æ ‡æ•°æ®åˆ°ç¼“å†²åŒº
+   * @warning è°ƒç”¨è¯¥å‡½æ•°ä¼šè¦†ç›–ç¼“å†²åŒºï¼Œä¸€èˆ¬ç”±ä¸»æ§æ¥è°ƒç”¨
+   * @return æ˜¯å¦æ¥æ”¶æˆåŠŸ
    */
   virtual bool Receive() { return false; }
 
   /**
-   * @brief ÓëÄ¿±ê½¨Á¢»ò¶Ï¿ªÁ¬½Ó
-   * @param flag ÎªÕæÊ±±íÊ¾½¨Á¢Á¬½Ó£¬Îª¼ÙÊ±±íÊ¾¶Ï¿ªÁ¬½Ó
-   * @return ²Ù×÷ÊÇ·ñ³É¹¦
+   * @brief ä¸ç›®æ ‡å»ºç«‹æˆ–æ–­å¼€è¿æ¥
+   * @param flag ä¸ºçœŸæ—¶è¡¨ç¤ºå»ºç«‹è¿æ¥ï¼Œä¸ºå‡æ—¶è¡¨ç¤ºæ–­å¼€è¿æ¥
+   * @return æ“ä½œæ˜¯å¦æˆåŠŸ
    */
   virtual bool Connect(bool flag) { return false; };
 
   /**
-   * @brief Îª½ÓÊÕÊı¾İ°ü·ÖÅä±àºÅ
-   * @tparam T Êı¾İ°üÀàĞÍ
-   * @param id ·ÖÅäµÄ±àºÅ
-   * @return ÊÇ·ñ·ÖÅä³É¹¦
+   * @brief ä¸ºæ¥æ”¶æ•°æ®åŒ…åˆ†é…ç¼–å·
+   * @tparam T æ•°æ®åŒ…ç±»å‹
+   * @param id åˆ†é…çš„ç¼–å·
+   * @return æ˜¯å¦åˆ†é…æˆåŠŸ
    */
   template <typename T>
   bool ReceiveRegister(short id);
 
   /**
-   * @brief Îª·¢ËÍÊı¾İ°ü·ÖÅä±àºÅ
-   * @tparam T Êı¾İ°üÀàĞÍ
-   * @param id ·ÖÅäµÄ±àºÅ
-   * @return ÊÇ·ñ·ÖÅä³É¹¦
+   * @brief ä¸ºå‘é€æ•°æ®åŒ…åˆ†é…ç¼–å·
+   * @tparam T æ•°æ®åŒ…ç±»å‹
+   * @param id åˆ†é…çš„ç¼–å·
+   * @return æ˜¯å¦åˆ†é…æˆåŠŸ
    */
   template <typename T>
   bool SendRegister(short id);
 
   /**
-   * @brief ´Ó»º³åÇøÖĞ¶ÁÈ¡´ø±àºÅµÄÊı¾İ
-   * @param [out] data ´«³öµÄÊı¾İ
-   * @return ÊÇ·ñ¶ÁÈ¡³É¹¦
+   * @brief ä»ç¼“å†²åŒºä¸­è¯»å–å¸¦ç¼–å·çš„æ•°æ®
+   * @param [out] data ä¼ å‡ºçš„æ•°æ®
+   * @return æ˜¯å¦è¯»å–æˆåŠŸ
    */
   template <typename T>
   bool ReadData(T REF_OUT data);
 
   /**
-   * @brief Ğ´Èë´ø±àºÅµÄÊı¾İµ½»º³åÇø
-   * @param [in] data ´«ÈëµÄÊı¾İ
-   * @return ÊÇ·ñĞ´Èë³É¹¦
+   * @brief å†™å…¥å¸¦ç¼–å·çš„æ•°æ®åˆ°ç¼“å†²åŒº
+   * @param [in] data ä¼ å…¥çš„æ•°æ®
+   * @return æ˜¯å¦å†™å…¥æˆåŠŸ
    */
   template <typename T>
   bool WriteData(T REF_IN data);
 
  protected:
-  using Registry = std::unordered_map<std::string, std::pair<short, short>>;  //(typename,(id,size))£¬ÀàĞÍÓĞÎ¨Ò»id
+  using Registry = std::unordered_map<std::string, std::pair<short, short>>;  //(typename,(id,size))ï¼Œç±»å‹æœ‰å”¯ä¸€id
 
   template <typename T>
   bool Register(Registry REF_OUT registry, short id);
@@ -96,15 +96,15 @@ class BaseMessage {
   template <typename T>
   short GetId(Registry REF_IN registry) const;
 
-  Registry receive_registry_{};                        ///< ½ÓÊÕÊı¾İ°ü×¢²á±í
-  Registry send_registry_{};                           ///< ·¢ËÍÊı¾İ°ü×¢²á±í
-  short receive_size_{};                               ///< ½ÓÊÕ´óĞ¡
-  Packet receive_buffer_{};                            ///< ½ÓÊÕ»º³åÇø
-  short send_size_{};                                  ///< ·¢ËÍ´óĞ¡
-  Packet send_buffer_{};                               ///< ·¢ËÍ»º³åÇø
-  std::unordered_map<short, Packet> packet_received_;  ///< ´æ´¢²ğ·ÖºÃµÄ½ÓÊÕÊı¾İ°ü: (id,data)£¬Ã¿Ò»¸öPacket¾ÍÊÇÒ»¸öÊı¾İ
+  Registry receive_registry_{};                        ///< æ¥æ”¶æ•°æ®åŒ…æ³¨å†Œè¡¨
+  Registry send_registry_{};                           ///< å‘é€æ•°æ®åŒ…æ³¨å†Œè¡¨
+  short receive_size_{};                               ///< æ¥æ”¶å¤§å°
+  Packet receive_buffer_{};                            ///< æ¥æ”¶ç¼“å†²åŒº
+  short send_size_{};                                  ///< å‘é€å¤§å°
+  Packet send_buffer_{};                               ///< å‘é€ç¼“å†²åŒº
+  std::unordered_map<short, Packet> packet_received_;  ///< å­˜å‚¨æ‹†åˆ†å¥½çš„æ¥æ”¶æ•°æ®åŒ…: (id,data)ï¼Œæ¯ä¸€ä¸ªPacketå°±æ˜¯ä¸€ä¸ªæ•°æ®
 };
-/// Ö»ÓĞÄ£°åÀàÒª·ÖÎÄ¼ş°É£¬´ó¸Å
+/// åªæœ‰æ¨¡æ¿ç±»è¦åˆ†æ–‡ä»¶å§ï¼Œå¤§æ¦‚
 
 template <typename T>
 bool BaseMessage::ReceiveRegister(const short id) {
@@ -112,8 +112,8 @@ bool BaseMessage::ReceiveRegister(const short id) {
     //LOG(ERROR) << "Failed to register receive packet.";
     return false;
   }
-  packet_received_[id].Resize(sizeof(T));  /// Éè¶¨²ğ·ÖºóµÄÊı¾İµÄ´óĞ¡
-  receive_size_ += sizeof(short) /*id´óĞ¡*/ + sizeof(T);
+  packet_received_[id].Resize(sizeof(T));  /// è®¾å®šæ‹†åˆ†åçš„æ•°æ®çš„å¤§å°
+  receive_size_ += sizeof(short) /*idå¤§å°*/ + sizeof(T);
   return true;
 }
 
@@ -135,13 +135,13 @@ bool BaseMessage::ReadData(T REF_OUT data) {
     return false;
   }
   Packet packet = packet_received_[id];
-  packet.Read(data);  /// ½âĞ¡°ü
+  packet.Read(data);  /// è§£å°åŒ…
   return true;
 }
 
 template <typename T>
 bool BaseMessage::WriteData(T REF_IN data) {
-  /// Ö»ÄÜĞ´ÒÑ¾­×¢²á¹ıÀàĞÍ¶ÔÓ¦idµÄ¶ÔÏó
+  /// åªèƒ½å†™å·²ç»æ³¨å†Œè¿‡ç±»å‹å¯¹åº”idçš„å¯¹è±¡
   const short id = GetId<T>(send_registry_);
   if (!id) {
     //LOG(ERROR) << "Unregistered packet";
@@ -154,7 +154,7 @@ bool BaseMessage::WriteData(T REF_IN data) {
 
 template <typename T>
 bool BaseMessage::Register(Registry REF_OUT registry, short id) {
-  /// ¼ì²éidºÍÀàĞÍÊÇ·ñ¶¼Ã»×¢²á
+  /// æ£€æŸ¥idå’Œç±»å‹æ˜¯å¦éƒ½æ²¡æ³¨å†Œ
   const std::string name = typeid(T).name();
   for (const auto& [id_, size_] : registry | std::views::values) {
     if (id_ == id) {
@@ -166,14 +166,14 @@ bool BaseMessage::Register(Registry REF_OUT registry, short id) {
     //LOG(ERROR) << "Type " << name << " is already registered.";
     return false;
   }
-  /// ×¢²á
+  /// æ³¨å†Œ
   registry[name] = {id, sizeof(T)};
   return true;
 }
 
 template <typename T>
 [[nodiscard]] short BaseMessage::GetId(Registry REF_IN registry) const {
-  /// »ñÈ¡¶ÔÓ¦id
+  /// è·å–å¯¹åº”id
   const std::string name = typeid(T).name();
   if (registry.contains(name)) {
     return registry.at(name).first;

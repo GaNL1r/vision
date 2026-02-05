@@ -19,10 +19,11 @@
 #include "tools/math_tools.hpp"
 #include "tools/plotter.hpp"
 #include "tools/recorder.hpp"
+#include "tools/yaml.hpp"
 
 const std::string keys =
   "{help h usage ? |                        | 输出命令行参数说明}"
-  "{@config-path   | configs/standard3.yaml | 位置参数，yaml配置文件路径 }";
+  "{@config-path   | configs/sentry.yaml | 位置参数，yaml配置文件路径 }";
 
 using namespace std::chrono;
 
@@ -41,6 +42,10 @@ int main(int argc, char * argv[])
 
   io::CBoard cboard(config_path);
   io::Camera camera(config_path);
+
+  auto yaml = tools::load(config_path);
+  int camera_delay = tools::read<int>(yaml, "camera_delay");
+
 
   auto_aim::multithread::MultiThreadDetector detector(config_path, true);
   auto_aim::Solver solver(config_path);
@@ -66,7 +71,7 @@ int main(int argc, char * argv[])
     auto t0 = std::chrono::steady_clock::now();
     /// 自瞄核心逻辑
     auto [img, armors, t] = detector.debug_pop();
-    Eigen::Quaterniond q = cboard.imu_at(t - 1ms);
+    Eigen::Quaterniond q = cboard.imu_at(t - std::chrono::nanoseconds(camera_delay));
     mode = cboard.mode;
 
     if (last_mode != mode) {
@@ -142,6 +147,12 @@ int main(int argc, char * argv[])
       data["h"] = x[10];
       data["last_id"] = target.last_id;
 
+      tools::draw_text(img, fmt::format(" r : {:.2f}", x[8]), {40, 150}, {0, 0, 255});
+      tools::draw_text(img, fmt::format(" w : {:.2f}", x[7]), {40, 180}, {0, 0, 255});
+      tools::draw_text(img, fmt::format(" x : {:.2f}", x[0]), {40, 210}, {0, 0, 255});
+      tools::draw_text(img, fmt::format(" y : {:.2f}", x[2]), {40, 240}, {0, 0, 255});
+      tools::draw_text(img, fmt::format(" z : {:.2f}", x[4]), {40, 270}, {0, 0, 255});
+
       // 卡方检验数据
       data["residual_yaw"] = target.ekf().data.at("residual_yaw");
       data["residual_pitch"] = target.ekf().data.at("residual_pitch");
@@ -158,6 +169,9 @@ int main(int argc, char * argv[])
     data["gimbal_yaw"] = ypr[0] * 57.3;
     data["gimbal_pitch"] = ypr[1] * 57.3;
     data["bullet_speed"] = cboard.bullet_speed;
+
+    tools::draw_text(img, fmt::format("yaw {:.2f}", ypr[0] * 57.3), {40, 80}, {0, 0, 255});
+    tools::draw_text(img, fmt::format("pitch {:.2f}", ypr[1] * 57.3), {40, 120}, {0, 0, 255});
 
     plotter.plot(data);
 

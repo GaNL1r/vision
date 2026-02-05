@@ -21,6 +21,7 @@ Target::Target(
   is_converged_(false),
   switch_count_(0)
 {
+  //tools::logger()->debug("dist:{}",armor.xyz_in_world.norm());
   auto r = radius;
   priority = armor.priority;
   const Eigen::VectorXd & xyz = armor.xyz_in_world;
@@ -68,6 +69,7 @@ Target::Target(double x, double vyaw, double radius, double h) : armor_num_(4)
 void Target::predict(std::chrono::steady_clock::time_point t)
 {
   auto dt = tools::delta_time(t, t_);
+  //tools::logger()->debug("Prediction time:{}" ,dt);
   predict(dt);
   t_ = t;
 }
@@ -98,8 +100,8 @@ void Target::predict(double dt)
     v1 = 10;   // 前哨站加速度方差
     v2 = 0.1;  // 前哨站角加速度方差
   } else {
-    v1 = 100;  // 加速度方差
-    v2 = 400;  // 角加速度方差
+    v1 = 400;  // 加速度方差
+    v2 = 10;  // 角加速度方差
   }
   auto a = dt * dt * dt * dt / 4;
   auto b = dt * dt * dt / 2;

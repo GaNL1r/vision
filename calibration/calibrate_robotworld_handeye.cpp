@@ -80,7 +80,7 @@ void load(
 
     // 识别标定板
     std::vector<cv::Point2f> centers_2d;
-    auto success = cv::findChessboardCorners(img, cv::Size(10, 7), centers_2d,
+    auto success = cv::findChessboardCorners(img, cv::Size(11, 8), centers_2d,
       cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE);
     if (success) {
       cv::Mat gray;

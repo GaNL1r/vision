@@ -65,6 +65,8 @@ int main(int argc, char * argv[])
     auto targets = tracker.track(armors, t);
 
     auto command = aimer.aim(targets, t, 22);
+    tools::draw_text(img, fmt::format(" cmd_y : {:.2f}", command.yaw * 57.3), {40, 90}, {0, 0, 255});
+    tools::draw_text(img, fmt::format(" cmd_p : {:.2f}", command.pitch * 57.3), {40, 60}, {0, 0, 255});
 
     shooter.shoot(command, aimer, targets, gimbal_pos);
 
@@ -73,6 +75,7 @@ int main(int argc, char * argv[])
 
     data["dt"] = dt;
     data["fps"] = 1 / dt;
+    tools::draw_text(img, fmt::format(" fps : {:.2f}", 1/dt), {40, 120}, {0, 0, 255});
     plotter.plot(data);
     // 装甲板原始观测数据
     data["armor_num"] = armors.size();
@@ -129,6 +132,12 @@ int main(int argc, char * argv[])
       data["h"] = x[10];
       data["last_id"] = target.last_id;
       data["distance"] = std::sqrt(x[0] * x[0] + x[2] * x[2] + x[4] * x[4]);
+
+      tools::draw_text(img, fmt::format(" r : {:.2f}", x[8]), {40, 150}, {0, 0, 255});
+      tools::draw_text(img, fmt::format(" w : {:.2f}", x[7]), {40, 180}, {0, 0, 255});
+      tools::draw_text(img, fmt::format(" x : {:.2f}", x[0]), {40, 210}, {0, 0, 255});
+      tools::draw_text(img, fmt::format(" y : {:.2f}", x[2]), {40, 240}, {0, 0, 255});
+      tools::draw_text(img, fmt::format(" z : {:.2f}", x[4]), {40, 270}, {0, 0, 255});
 
       // 卡方检验数据
       data["residual_yaw"] = target.ekf().data.at("residual_yaw");
