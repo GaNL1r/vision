@@ -23,6 +23,14 @@ add_library(auto_aim OBJECT
     multithread/commandgener.cpp
     multithread/mt_detector.cpp
     planner/planner.cpp
+        corrector/aim_corrector.cpp
+        corrector/aim_corrector.hpp
+        corrector/detect_bullet.cpp
+        corrector/detect_bullet.hpp
+        corrector/do_reproj.cpp
+        corrector/do_reproj.hpp
+        corrector/coord_converter.cpp
+        corrector/coord_converter.hpp
 )
 
 target_link_libraries(auto_aim io openvino::runtime tinympcstatic)

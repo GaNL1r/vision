@@ -12,4 +12,9 @@ add_library(tools OBJECT
     logger.cpp
     pid.cpp
     crc.cpp
+    adaptive_ekf.hpp
+    filter.hpp
+    math.cpp
+    math.hpp
+    kalman.hpp
 )
