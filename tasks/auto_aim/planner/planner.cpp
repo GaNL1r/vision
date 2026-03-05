@@ -19,6 +19,10 @@ Planner::Planner(const std::string & config_path)
   decision_speed_ = tools::read<double>(yaml, "decision_speed");
   high_speed_delay_time_ = tools::read<double>(yaml, "high_speed_delay_time");
   low_speed_delay_time_ = tools::read<double>(yaml, "low_speed_delay_time");
+  comming_angle_17mm = yaml["comming_angle_17mm"].as<double>()/57.3;  // degree to rad
+  leaving_angle_17mm = yaml["leaving_angle_17mm"].as<double>()/57.3;
+  comming_angle_42mm = yaml["comming_angle_42mm"].as<double>()/57.3;
+  leaving_angle_42mm = yaml["leaving_angle_42mm"].as<double>()/57.3;
 
   setup_yaw_solver(config_path);
   setup_pitch_solver(config_path);
@@ -42,7 +46,34 @@ Plan Planner::plan(Target target, double bullet_speed)
     }
   }
   auto bullet_traj = tools::Trajectory(bullet_speed, min_dist, xyz.z());
+
+  //TODO 迭代求解更精确的飞行时间
   target.predict(bullet_traj.fly_time);
+
+  Eigen::VectorXd ekf_x = target.ekf_x(); // 预测到弹道飞行时间后的状态
+  std::vector<Eigen::Vector4d> armor_xyza_list = target.armor_xyza_list();
+  auto armor_num = armor_xyza_list.size();
+
+  auto center_yaw = std::atan2(ekf_x[2], ekf_x[0]);
+
+  // 如果delta_angle为0，则该装甲板中心和整车中心的连线在世界坐标系的xy平面过原点
+  std::vector<double> delta_angle_list;
+  for (int i = 0; i < armor_num; i++) {
+    auto delta_angle = tools::limit_rad(armor_xyza_list[i][3] - center_yaw);
+    delta_angle_list.emplace_back(delta_angle);
+  }
+
+  double coming_angle, leaving_angle;
+  if (bullet_speed < 14) {
+    coming_angle = comming_angle_42mm;
+    leaving_angle = leaving_angle_42mm;
+  }else if (target.name == ArmorName::outpost) {
+    coming_angle = 30 / 57.3;
+    leaving_angle = -30 / 57.3;
+  } else {
+    coming_angle = comming_angle_17mm;
+    leaving_angle = leaving_angle_17mm;
+  }
 
   // 2. Get trajectory
   double yaw0;
@@ -90,6 +121,16 @@ Plan Planner::plan(Target target, double bullet_speed)
       traj(0, HALF_HORIZON + shoot_offset_) - yaw_solver_->work->x(0, HALF_HORIZON + shoot_offset_),
       traj(2, HALF_HORIZON + shoot_offset_) -
         pitch_solver_->work->x(0, HALF_HORIZON + shoot_offset_)) < fire_thresh_;
+
+  bool in_zone;
+  if (std::abs(target.ekf_x()[8]) > 2 || target.name == ArmorName::outpost ) {
+      for (int i = 0; i < armor_num; i++) {
+        if (std::abs(delta_angle_list[i]) > coming_angle) continue;
+        if (ekf_x[7] > 0 && delta_angle_list[i] < leaving_angle) in_zone = true;
+        if (ekf_x[7] < 0 && delta_angle_list[i] > -leaving_angle) in_zone = true;
+      }
+  }
+
   return plan;
 }
 
