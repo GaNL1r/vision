@@ -19,10 +19,8 @@ Planner::Planner(const std::string & config_path)
   decision_speed_ = tools::read<double>(yaml, "decision_speed");
   high_speed_delay_time_ = tools::read<double>(yaml, "high_speed_delay_time");
   low_speed_delay_time_ = tools::read<double>(yaml, "low_speed_delay_time");
-  comming_angle_17mm = yaml["comming_angle_17mm"].as<double>()/57.3;  // degree to rad
-  leaving_angle_17mm = yaml["leaving_angle_17mm"].as<double>()/57.3;
-  comming_angle_42mm = yaml["comming_angle_42mm"].as<double>()/57.3;
-  leaving_angle_42mm = yaml["leaving_angle_42mm"].as<double>()/57.3;
+  window_17mm = yaml["window_17mm"].as<double>()/57.3;  // degree to rad
+  window_42mm = yaml["window_42mm"].as<double>()/57.3;
 
   setup_yaw_solver(config_path);
   setup_pitch_solver(config_path);
@@ -63,16 +61,13 @@ Plan Planner::plan(Target target, double bullet_speed)
     delta_angle_list.emplace_back(delta_angle);
   }
 
-  double coming_angle, leaving_angle;
+  double window;
   if (bullet_speed < 14) {
-    coming_angle = comming_angle_42mm;
-    leaving_angle = leaving_angle_42mm;
+    window = window_42mm;
   }else if (target.name == ArmorName::outpost) {
-    coming_angle = 30 / 57.3;
-    leaving_angle = -30 / 57.3;
+    window = 70 / 57.3;
   } else {
-    coming_angle = comming_angle_17mm;
-    leaving_angle = leaving_angle_17mm;
+    window = window_17mm;
   }
 
   // 2. Get trajectory
@@ -122,14 +117,24 @@ Plan Planner::plan(Target target, double bullet_speed)
       traj(2, HALF_HORIZON + shoot_offset_) -
         pitch_solver_->work->x(0, HALF_HORIZON + shoot_offset_)) < fire_thresh_;
 
-  bool in_zone;
-  if (std::abs(target.ekf_x()[8]) > 2 || target.name == ArmorName::outpost ) {
-      for (int i = 0; i < armor_num; i++) {
-        if (std::abs(delta_angle_list[i]) > coming_angle) continue;
-        if (ekf_x[7] > 0 && delta_angle_list[i] < leaving_angle) in_zone = true;
-        if (ekf_x[7] < 0 && delta_angle_list[i] > -leaving_angle) in_zone = true;
+  bool in_zone = true;
+
+  // 只有在“需要角度过滤”的场景下才进行限制
+  bool is_spinning = std::abs(target.ekf_x()[8]) > 2; // 角速度阈值
+  bool is_outpost = (target.name == ArmorName::outpost);
+
+  if (is_spinning || is_outpost) {
+    in_zone = false; // 先置假，通过下面校验再置真
+
+    for (const auto& da : delta_angle_list) {
+      if (std::abs(da) < window) {
+        in_zone = true;
+        break;
       }
+    }
   }
+
+  plan.fire = plan.fire && in_zone;
 
   return plan;
 }
