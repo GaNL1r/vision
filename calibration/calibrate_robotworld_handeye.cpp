@@ -79,8 +79,17 @@ void load(
     tools::draw_text(drawing, fmt::format("roll  {:.2f}", ypr[2]), {40, 120}, {0, 0, 255});
 
     // 识别标定板
+    cv::Mat gray;
+    // 1. 显式转换为灰度图，减少函数内部重复开销
+    cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+
+    // 2. 推荐使用 SB (Sector Based) 版本，速度更快，且自带亚像素精化
+    // 注意：SB版本不需要单独调用 cornerSubPix
+    int flags_sb = cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY;
+
+
     std::vector<cv::Point2f> centers_2d;
-    auto success = cv::findCirclesGrid(img, pattern_size, centers_2d);  // 默认是对称圆点图案
+    bool success = cv::findChessboardCornersSB(gray, pattern_size, centers_2d, flags_sb);
 
     // 显示识别结果
     cv::drawChessboardCorners(drawing, pattern_size, centers_2d, success);

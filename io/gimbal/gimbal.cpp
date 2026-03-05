@@ -496,9 +496,11 @@ void Gimbal::send(
   bool control, bool fire, float yaw, float yaw_vel, float yaw_acc, float pitch, float pitch_vel,
   float pitch_acc)
 {
+  yaw *= 180 / M_PI;
+  pitch *= 180 / M_PI;
   const srm::message::GimbalSend gimbal_send{yaw, pitch};
   tools::logger()->info("send:yaw={:1f},pitch={:1f} Receive:yaw={:1f},ptich={:1f}",yaw, pitch,gimbal_receive.yaw, gimbal_receive.pitch);
-  const srm::message::ShootSend shoot_send{control ? (fire ? 2 : 1) : 0};
+  const srm::message::ShootSend shoot_send{fire ? 1 : 0};
 
   try {
     message_->WriteData(gimbal_send);

@@ -96,7 +96,7 @@ Plan Planner::plan(Target target, double bullet_speed)
   pitch_solver_->work->Xref = traj.block(2, 0, 2, HORIZON);
   tiny_solve(pitch_solver_);
 
-  Plan plan;
+  Plan plan{};
   plan.control = true;
 
   plan.target_yaw = tools::limit_rad(traj(0, HALF_HORIZON) + yaw0);
