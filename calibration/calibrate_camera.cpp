@@ -43,18 +43,16 @@ void load(
     // 设置图片尺寸
     img_size = img.size();
 
-    cv::Mat gray;
-    // 1. 显式转换为灰度图，减少函数内部重复开销
-    cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
-
-    // 2. 推荐使用 SB (Sector Based) 版本，速度更快，且自带亚像素精化
-    // 注意：SB版本不需要单独调用 cornerSubPix
-    int flags_sb = cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY;
-
-
+    // 识别标定板
     std::vector<cv::Point2f> centers_2d;
-    bool success = cv::findChessboardCornersSB(gray, pattern_size, centers_2d, flags_sb);
-
+    auto success = cv::findChessboardCorners(img, cv::Size(11, 8), centers_2d,
+          cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE);
+    if (success) {
+      cv::Mat gray;
+      cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
+      cv::cornerSubPix(gray,centers_2d,cv::Size(11,11),cv::Size(-1,-1),
+        cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT,30,0.1));
+    }
     // 显示识别结果
     auto drawing = img.clone();
     cv::drawChessboardCorners(drawing, pattern_size, centers_2d, success);
