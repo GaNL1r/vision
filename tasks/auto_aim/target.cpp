@@ -93,14 +93,21 @@ void Target::predict(double dt)
 
   // Piecewise White Noise Model
   // https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/07-Kalman-Filter-Math.ipynb
+
+  double current_dist = std::sqrt(ekf_.x[0]*ekf_.x[0] + ekf_.x[2]*ekf_.x[2] + ekf_.x[4]*ekf_.x[4]);
+
   double v1, v2;
   if (name == ArmorName::outpost) {
     v1 = 10;   // 前哨站加速度方差
     v2 = 0.1;  // 前哨站角加速度方差
   } else {
-    v1 = 100;  // 加速度方差
-    v2 = 400;  // 角加速度方差
+    // 距离越远，factor越小，让滤波器在远距离时更相信预测模型，表现更平滑
+    // 距离越近，factor越大，让滤波器更相信观测，提高响应速度
+    double distance_factor = std::clamp(3.0 / (current_dist + 1e-3), 0.1, 1.0);
+    v1 = 400.0 * distance_factor;  // 加速度方差自适应
+    v2 = 10.0 * distance_factor;   // 角加速度方差自适应
   }
+
   auto a = dt * dt * dt * dt / 4;
   auto b = dt * dt * dt / 2;
   auto c = dt * dt;
@@ -186,19 +193,27 @@ void Target::update(const Armor & armor)
 
 void Target::update_ypda(const Armor & armor, int id)
 {
-  //观测jacobi
+  // 观测jacobi
   Eigen::MatrixXd H = h_jacobian(ekf_.x, id);
-  // Eigen::VectorXd R_dig{{4e-3, 4e-3, 1, 9e-2}};
+
+  // 改进问题1：动态观测噪声协方差 R 矩阵（远距离测距误差随距离平方放大）
+  double dist = std::abs(armor.ypd_in_world[2]);
   auto center_yaw = std::atan2(armor.xyz_in_world[1], armor.xyz_in_world[0]);
   auto delta_angle = tools::limit_rad(armor.ypr_in_world[0] - center_yaw);
-  Eigen::VectorXd R_dig{
-    {4e-3, 4e-3, log(std::abs(delta_angle) + 1) + 1,
-     log(std::abs(armor.ypd_in_world[2]) + 1) / 200 + 9e-2}};
 
-  //测量过程噪声偏差的方差
+  // 使用二次方关系替代原有的 log 关系
+  Eigen::VectorXd R_dig{
+      {4e-3,
+       4e-3,
+       1.5e-2 * dist * dist + 5e-3,          // 距离噪声随距离平方大幅增加，降低远距离深度跳变权重
+       5.0e-3 * dist + std::abs(delta_angle) // 角度噪声随距离线性变大
+      }
+  };
+
+  // 测量过程噪声偏差的方差
   Eigen::MatrixXd R = R_dig.asDiagonal();
 
-  // 定义非线性转换函数h: x -> z
+  // 定义非线性转换函数h: x -> z (保持原样)
   auto h = [&](const Eigen::VectorXd & x) -> Eigen::Vector4d {
     Eigen::VectorXd xyz = h_armor_xyz(x, id);
     Eigen::VectorXd ypd = tools::xyz2ypd(xyz);
@@ -206,7 +221,7 @@ void Target::update_ypda(const Armor & armor, int id)
     return {ypd[0], ypd[1], ypd[2], angle};
   };
 
-  // 防止夹角求差出现异常值
+  // 防止夹角求差出现异常值 (保持原样)
   auto z_subtract = [](const Eigen::VectorXd & a, const Eigen::VectorXd & b) -> Eigen::VectorXd {
     Eigen::VectorXd c = a - b;
     c[0] = tools::limit_rad(c[0]);
@@ -217,7 +232,19 @@ void Target::update_ypda(const Armor & armor, int id)
 
   const Eigen::VectorXd & ypd = armor.ypd_in_world;
   const Eigen::VectorXd & ypr = armor.ypr_in_world;
-  Eigen::VectorXd z{{ypd[0], ypd[1], ypd[2], ypr[0]}};  //获得观测量
+  Eigen::VectorXd z{{ypd[0], ypd[1], ypd[2], ypr[0]}};  // 获得观测量
+
+  // 改进问题2：引入 NIS (马氏距离) 门限滤波剔除远距离异常跳变点
+  if (is_converged_) {
+    Eigen::VectorXd residual = z_subtract(z, h(ekf_.x));
+    Eigen::MatrixXd S = H * ekf_.P * H.transpose() + R;
+    double nis = residual.transpose() * S.inverse() * residual;
+
+    // 自由度为4，95%置信区间阈值约 9.49。远距离 PnP 跳变如果超过此阈值，执行"软拒绝"
+    if (nis > 15.0) {
+      R *= 10.0; // 极大增加异常观测点的噪声方差，使其基本不影响当前预测状态
+    }
+  }
 
   ekf_.update(z, H, R, h, z_subtract);
 }
