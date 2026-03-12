@@ -2,7 +2,10 @@
 #define IO__ROS2_HPP
 
 #include"subscribe2location.hpp"
-#include <Eigen/Dense>  // For Eigen::Vector3d
+#include "rclcpp/rclcpp.hpp"  // <--- 必须添加这一行
+#include <Eigen/Dense>
+#include <thread>
+#include <memory>
 namespace io
 {
 class ROS2

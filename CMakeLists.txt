@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(sp_vision_hero_pneumatic)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # --- 基础依赖 ---
 find_package(OpenCV REQUIRED)

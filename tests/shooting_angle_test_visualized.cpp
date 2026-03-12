@@ -142,6 +142,7 @@ int main(int argc, char *argv[]) {
 
   io::CBoard cboard(config_path);
   io::Camera camera(config_path);
+  io::ROS2 ros2;
 
   auto_aim::HangingShooter hangingshooter(config_path);
   TrajectoryVisualizer visualizer(config_path);
@@ -189,7 +190,7 @@ int main(int argc, char *argv[]) {
     }
 
     io::Command command =
-        hangingshooter.aim(q, current_location_info, cboard.bullet_speed);
+        hangingshooter.aim(q, ros2.subscribe(), cboard.bullet_speed);
 
     cboard.send(command);
 
