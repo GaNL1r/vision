@@ -44,3 +44,6 @@ target_link_libraries(capture PUBLIC ${OpenCV_LIBS} fmt::fmt tools io)
 
 add_executable(angle_test tests/shooting_angle_test.cpp tasks/hanging_shooter.cpp)
 target_link_libraries(angle_test PUBLIC tools io ${OpenCV_LIBS} fmt::fmt)
+
+add_executable(angle_test_visualized tests/shooting_angle_test_visualized.cpp tasks/hanging_shooter.cpp)
+target_link_libraries(angle_test_visualized PUBLIC tools io ${OpenCV_LIBS} fmt::fmt)
