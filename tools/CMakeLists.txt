@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-add_library(tools OBJECT 
+add_library(tools OBJECT
     exiter.cpp
     extended_kalman_filter.cpp
     img_tools.cpp
@@ -9,4 +9,5 @@ add_library(tools OBJECT
     trajectory.cpp
     recorder.cpp
     logger.cpp
+    yaml.hpp
 )
