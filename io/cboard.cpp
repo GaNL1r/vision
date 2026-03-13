@@ -174,6 +174,13 @@ typedef struct {
 typedef struct {
   float yaw;
   float pitch;
+  // --- 新增字段 ---
+  float self_x;
+  float self_y;
+  float self_z;
+  float target_x;
+  float target_y;
+  float target_z;
 } VisionGimbalSend;
 
 typedef struct {
@@ -462,13 +469,20 @@ Eigen::Quaterniond CBoard::imu_at(std::chrono::steady_clock::time_point timestam
 
 void CBoard::send(Command command) const
 {
-  auto yaw_ = static_cast<float>(command.yaw);
-  auto pitch_ = static_cast<float>(command.pitch);
+  auto yaw_ = command.yaw;
+  auto pitch_ = command.pitch;
   yaw_ = yaw_ * 180.0 / M_PI;
   pitch_ = pitch_ * 180.0 / M_PI;
   tools::logger()->info("send:{},{}",yaw_,pitch_);
   auto Is_fire = command.shoot;
-  const srm::message::GimbalSend gimbal_send{yaw_, pitch_};
+  const srm::message::GimbalSend gimbal_send{static_cast<float>(yaw_), static_cast<float>(pitch_),
+    static_cast<float>(command.self_xyz[0]),
+      static_cast<float>(command.self_xyz[1]),
+      static_cast<float>(command.self_xyz[2]),
+      static_cast<float>(command.target_xyz[0]),
+      static_cast<float>(command.target_xyz[1]),
+      static_cast<float>(command.target_xyz[2])
+  };
   const srm::message::ShootSend shoot_send{Is_fire};
   message_->WriteData(gimbal_send);
   message_->WriteData(shoot_send);

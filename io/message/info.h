@@ -10,6 +10,13 @@ namespace srm::message {
 struct GimbalSend {
   float yaw;    ///< 绝对yaw角度
   float pitch;  ///< 绝对pitch角度
+  // --- 新增字段 ---
+  float self_x;
+  float self_y;
+  float self_z;
+  float target_x;
+  float target_y;
+  float target_z;
 };
 
 /// 接收的云台数据

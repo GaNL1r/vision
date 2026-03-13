@@ -142,6 +142,6 @@ io::Command HangingShooter::aim(Eigen::Quaterniond q, io::LocationInfo info,
           HangingShooter::calculate_pitch(info.x, info.y, info.z, bullet_speed);
   } else
     pitch = std::asin(2.0f * (q.w() * q.y() - q.x() * q.z()));
-  return {false, false, yaw, pitch};
+  return {false, false, yaw, pitch, info.x, info.y, info.z, target_x_, target_y_, target_z_};
 }
 } // namespace auto_aim
