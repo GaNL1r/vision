@@ -3,8 +3,10 @@
 
 #include <Eigen/Dense>
 #include <list>
+#include <memory>
 #include <optional>
 
+#include "tasks/auto_aim/aim_corrector/aim_corrector.hpp"
 #include "tasks/auto_aim/target.hpp"
 #include "tinympc/tiny_api.hpp"
 
@@ -28,6 +30,7 @@ struct Plan
   float pitch;
   float pitch_vel;
   float pitch_acc;
+  Eigen::Vector2d correction;
 };
 
 class Planner
@@ -35,6 +38,9 @@ class Planner
 public:
   Eigen::Vector4d debug_xyza;
   Planner(const std::string & config_path);
+
+  void set_corrector(std::shared_ptr<AimCorrector> corrector);
+  std::shared_ptr<AimCorrector> get_corrector() const { return corrector_; }
 
   Plan plan(Target target, double bullet_speed);
   Plan plan(std::optional<Target> target, double bullet_speed);
@@ -47,6 +53,8 @@ private:
 
   TinySolver * yaw_solver_;
   TinySolver * pitch_solver_;
+
+  std::shared_ptr<AimCorrector> corrector_;
 
   void setup_yaw_solver(const std::string & config_path);
   void setup_pitch_solver(const std::string & config_path);

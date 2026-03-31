@@ -119,3 +119,29 @@ aim_time: 0.150         # s
 wait_time: 0.300        # s
 command_fire_gap: 0.080 # s
 predict_time: 0.150     # s
+
+#####-----aim_corrector-----#####
+aim_corrector:
+  enabled: false
+  type: "distance"
+  
+  distance_segments:
+    - {min_dist: 0.0, max_dist: 2.0, yaw_correction: 0.0, pitch_correction: 0.0}
+    - {min_dist: 2.0, max_dist: 4.0, yaw_correction: 0.0, pitch_correction: 1.0}
+    - {min_dist: 4.0, max_dist: 6.0, yaw_correction: 0.0, pitch_correction: 3.0}
+    - {min_dist: 6.0, max_dist: 8.0, yaw_correction: 0.5, pitch_correction: 4.5}
+    - {min_dist: 8.0, max_dist: 10.0, yaw_correction: 1.0, pitch_correction: 5.5}
+  
+  accumulative:
+    q_vec: [0.1]
+    r_vec: [1.0]
+    max_history: 15
+  
+  bullet_tracking:
+    sample_enabled: false
+    correction_enabled: false
+    bullet_radius: 0.0085
+    resistance_k: 0.01
+    control_to_fire_latency: 0.05
+    q_vec: [0.1]
+    r_vec: [1.0]

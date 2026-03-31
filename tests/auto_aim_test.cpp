@@ -5,7 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <opencv2/opencv.hpp>
 
-#include "tasks/auto_aim/aimer.hpp"
+#include "tasks/auto_aim/planner/planner.hpp"
 #include "tasks/auto_aim/solver.hpp"
 #include "tasks/auto_aim/tracker.hpp"
 #include "tasks/auto_aim/yolo.hpp"
@@ -24,7 +24,6 @@ const std::string keys =
 
 int main(int argc, char * argv[])
 {
-  // 读取命令行参数
   cv::CommandLineParser cli(argc, argv, keys);
   if (cli.has("help")) {
     cli.printMessage();
@@ -46,21 +45,13 @@ int main(int argc, char * argv[])
   auto_aim::YOLO yolo(config_path);
   auto_aim::Solver solver(config_path);
   auto_aim::Tracker tracker(config_path, solver);
-  auto_aim::Aimer aimer(config_path);
+  auto_aim::Planner planner(config_path);
 
   cv::Mat img, drawing;
   auto t0 = std::chrono::steady_clock::now();
-
-  auto_aim::Target last_target;
-  io::Command last_command;
-  double last_t = -1;
+  auto_aim::Plan last_plan;
 
   video.set(cv::CAP_PROP_POS_FRAMES, start_index);
-  for (int i = 0; i < start_index; i++) {
-    double t, w, x, y, z;
-    text >> t >> w >> x >> y >> z;
-  }
-
   for (int frame_count = start_index; !exiter.exit(); frame_count++) {
     if (end_index > 0 && frame_count > end_index) break;
 
@@ -71,8 +62,6 @@ int main(int argc, char * argv[])
     text >> t >> w >> x >> y >> z;
     auto timestamp = t0 + std::chrono::microseconds(int(t * 1e6));
 
-    /// 自瞄核心逻辑
-
     solver.set_R_gimbal2world({w, x, y, z});
 
     auto yolo_start = std::chrono::steady_clock::now();
@@ -81,41 +70,47 @@ int main(int argc, char * argv[])
     auto tracker_start = std::chrono::steady_clock::now();
     auto targets = tracker.track(armors, timestamp);
 
-    auto aimer_start = std::chrono::steady_clock::now();
-    auto command = aimer.aim(targets, timestamp, 27, false);
+    auto planner_start = std::chrono::steady_clock::now();
+    auto target = targets.empty() ? std::optional<auto_aim::Target>() : targets.front();
+    auto plan = planner.plan(target, 22);
 
-    if (
-      !targets.empty() && aimer.debug_aim_point.valid &&
-      std::abs(command.yaw - last_command.yaw) * 57.3 < 2)
-      command.shoot = true;
+    if (plan.control && std::abs(plan.yaw - last_plan.yaw) * 57.3 < 2) {
+      plan.fire = true;
+    }
 
-    if (command.control) last_command = command;
-    /// 调试输出
+    if (plan.control) last_plan = plan;
 
     auto finish = std::chrono::steady_clock::now();
     tools::logger()->info(
-      "[{}] yolo: {:.1f}ms, tracker: {:.1f}ms, aimer: {:.1f}ms", frame_count,
+      "[{}] yolo: {:.1f}ms, tracker: {:.1f}ms, planner: {:.1f}ms", frame_count,
       tools::delta_time(tracker_start, yolo_start) * 1e3,
-      tools::delta_time(aimer_start, tracker_start) * 1e3,
-      tools::delta_time(finish, aimer_start) * 1e3);
+      tools::delta_time(planner_start, tracker_start) * 1e3,
+      tools::delta_time(finish, planner_start) * 1e3);
 
     tools::draw_text(
       img,
       fmt::format(
-        "command is {},{:.2f},{:.2f},shoot:{}", command.control, command.yaw * 57.3,
-        command.pitch * 57.3, command.shoot),
+        "plan: control={}, yaw={:.2f}, pitch={:.2f}, fire={}", plan.control, plan.yaw * 57.3,
+        plan.pitch * 57.3, plan.fire),
       {10, 60}, {154, 50, 205});
 
     Eigen::Quaternion gimbal_q = {w, x, y, z};
     tools::draw_text(
       img,
       fmt::format(
-        "gimbal yaw{:.2f}", (tools::eulers(gimbal_q.toRotationMatrix(), 2, 1, 0) * 57.3)[0]),
+        "gimbal yaw={:.2f}", (tools::eulers(gimbal_q.toRotationMatrix(), 2, 1, 0) * 57.3)[0]),
       {10, 90}, {255, 255, 255});
+
+    if (auto corrector = planner.get_corrector()) {
+      auto correction = corrector->get_correction();
+      tools::draw_text(
+        img,
+        fmt::format("correction: yaw={:.2f}, pitch={:.2f}", correction(0) * 57.3, correction(1) * 57.3),
+        {10, 120}, {100, 200, 100});
+    }
 
     nlohmann::json data;
 
-    // 装甲板原始观测数据
     data["armor_num"] = armors.size();
     if (!armors.empty()) {
       const auto & armor = armors.front();
@@ -130,37 +125,25 @@ int main(int argc, char * argv[])
     Eigen::Quaternion q{w, x, y, z};
     auto yaw = tools::eulers(q, 2, 1, 0)[0];
     data["gimbal_yaw"] = yaw * 57.3;
-    data["cmd_yaw"] = command.yaw * 57.3;
-    data["shoot"] = command.shoot;
+    data["plan_yaw"] = plan.yaw * 57.3;
+    data["plan_pitch"] = plan.pitch * 57.3;
+    data["fire"] = plan.fire;
 
-    if (!targets.empty()) {
-      auto target = targets.front();
+    if (target.has_value()) {
+      std::vector<Eigen::Vector4d> armor_xyza_list = target->armor_xyza_list();
 
-      if (last_t == -1) {
-        last_target = target;
-        last_t = t;
-        continue;
-      }
-
-      std::vector<Eigen::Vector4d> armor_xyza_list;
-
-      // 当前帧target更新后
-      armor_xyza_list = target.armor_xyza_list();
-      for (const Eigen::Vector4d & xyza : armor_xyza_list) {
+      for (const auto & xyza : armor_xyza_list) {
         auto image_points =
-          solver.reproject_armor(xyza.head(3), xyza[3], target.armor_type, target.name);
+          solver.reproject_armor(xyza.head<3>(), xyza[3], target->armor_type, target->name);
         tools::draw_points(img, image_points, {0, 255, 0});
       }
 
-      // aimer瞄准位置
-      auto aim_point = aimer.debug_aim_point;
-      Eigen::Vector4d aim_xyza = aim_point.xyza;
+      auto aim_xyza = planner.debug_xyza;
       auto image_points =
-        solver.reproject_armor(aim_xyza.head(3), aim_xyza[3], target.armor_type, target.name);
-      if (aim_point.valid) tools::draw_points(img, image_points, {0, 0, 255});
+        solver.reproject_armor(aim_xyza.head<3>(), aim_xyza[3], target->armor_type, target->name);
+      if (plan.control) tools::draw_points(img, image_points, {0, 0, 255});
 
-      // 观测器内部数据
-      Eigen::VectorXd x = target.ekf_x();
+      Eigen::VectorXd x = target->ekf_x();
       data["x"] = x[0];
       data["vx"] = x[1];
       data["y"] = x[2];
@@ -172,23 +155,22 @@ int main(int argc, char * argv[])
       data["r"] = x[8];
       data["l"] = x[9];
       data["h"] = x[10];
-      data["last_id"] = target.last_id;
+      data["last_id"] = target->last_id;
 
-      // 卡方检验数据
-      data["residual_yaw"] = target.ekf().data.at("residual_yaw");
-      data["residual_pitch"] = target.ekf().data.at("residual_pitch");
-      data["residual_distance"] = target.ekf().data.at("residual_distance");
-      data["residual_angle"] = target.ekf().data.at("residual_angle");
-      data["nis"] = target.ekf().data.at("nis");
-      data["nees"] = target.ekf().data.at("nees");
-      data["nis_fail"] = target.ekf().data.at("nis_fail");
-      data["nees_fail"] = target.ekf().data.at("nees_fail");
-      data["recent_nis_failures"] = target.ekf().data.at("recent_nis_failures");
+      data["residual_yaw"] = target->ekf().data.at("residual_yaw");
+      data["residual_pitch"] = target->ekf().data.at("residual_pitch");
+      data["residual_distance"] = target->ekf().data.at("residual_distance");
+      data["residual_angle"] = target->ekf().data.at("residual_angle");
+      data["nis"] = target->ekf().data.at("nis");
+      data["nees"] = target->ekf().data.at("nees");
+      data["nis_fail"] = target->ekf().data.at("nis_fail");
+      data["nees_fail"] = target->ekf().data.at("nees_fail");
+      data["recent_nis_failures"] = target->ekf().data.at("recent_nis_failures");
     }
 
     plotter.plot(data);
 
-    cv::resize(img, img, {}, 0.5, 0.5);  // 显示时缩小图片尺寸
+    cv::resize(img, img, {}, 0.5, 0.5);
     cv::imshow("reprojection", img);
     auto key = cv::waitKey(30);
     if (key == 'q') break;

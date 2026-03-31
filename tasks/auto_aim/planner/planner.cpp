@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "tasks/auto_aim/aim_corrector/aim_corrector.hpp"
 #include "tools/math_tools.hpp"
 #include "tools/trajectory.hpp"
 #include "tools/yaml.hpp"
@@ -22,7 +23,21 @@ Planner::Planner(const std::string & config_path)
 
   setup_yaw_solver(config_path);
   setup_pitch_solver(config_path);
+
+  if (yaml["aim_corrector"]) {
+    auto corrector_yaml = yaml["aim_corrector"];
+    bool enabled = tools::read_or(corrector_yaml, "enabled", false);
+    if (enabled) {
+      std::string type_str = tools::read_or<std::string>(corrector_yaml, "type", "none");
+      auto type = AimCorrectorFactory::type_from_string(type_str);
+      if (type != AimCorrectorFactory::Type::NONE) {
+        corrector_ = AimCorrectorFactory::create(type, config_path);
+      }
+    }
+  }
 }
+
+void Planner::set_corrector(std::shared_ptr<AimCorrector> corrector) { corrector_ = corrector; }
 
 Plan Planner::plan(Target target, double bullet_speed)
 {
@@ -83,6 +98,12 @@ Plan Planner::plan(Target target, double bullet_speed)
   plan.pitch = pitch_solver_->work->x(0, HALF_HORIZON);
   plan.pitch_vel = pitch_solver_->work->x(1, HALF_HORIZON);
   plan.pitch_acc = pitch_solver_->work->u(0, HALF_HORIZON);
+
+  if (corrector_ && corrector_->is_enabled()) {
+    plan.correction = corrector_->get_correction();
+  } else {
+    plan.correction = Eigen::Vector2d::Zero();
+  }
 
   auto shoot_offset_ = 2;
   plan.fire =
@@ -173,7 +194,16 @@ Eigen::Matrix<double, 2, 1> Planner::aim(const Target & target, double bullet_sp
   auto bullet_traj = tools::Trajectory(bullet_speed, min_dist, xyz.z());
   if (bullet_traj.unsolvable) throw std::runtime_error("Unsolvable bullet trajectory!");
 
-  return {tools::limit_rad(azim + yaw_offset_), -bullet_traj.pitch - pitch_offset_};
+  double base_yaw = tools::limit_rad(azim + yaw_offset_);
+  double base_pitch = -bullet_traj.pitch - pitch_offset_;
+
+  if (corrector_ && corrector_->is_enabled()) {
+    corrector_->update(min_dist, base_yaw, base_pitch);
+    Eigen::Vector2d correction = corrector_->get_correction();
+    return {base_yaw + correction(0), base_pitch + correction(1)};
+  }
+
+  return {base_yaw, base_pitch};
 }
 
 Trajectory Planner::get_trajectory(Target & target, double yaw0, double bullet_speed)
