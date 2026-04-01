@@ -143,6 +143,10 @@ public:
 
   void set_gimbal_state(double yaw, double pitch, double bullet_speed) override;
 
+  void set_quaternion(const Eigen::Quaterniond & q) override;
+
+  std::vector<BulletCircle> get_bullet_circles() override;
+
   bool is_enabled() const override { return enabled_; }
 
   void reset() override;
@@ -174,6 +178,7 @@ private:
   cv::Mat current_image_;
   Eigen::Quaterniond current_q_;
   Eigen::Matrix3d camera_matrix_;
+  Eigen::Matrix3d R_imu2camera_;
   cv::Mat distort_coeffs_;
 
   int last_shoot_id_ = 0;

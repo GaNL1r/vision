@@ -208,6 +208,30 @@ void BulletTrackingCorrector::load_config(const std::string & config_path)
       }
     }
 
+    Eigen::Matrix3d R_camera2gimbal = Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d R_gimbal2imubody = Eigen::Matrix3d::Identity();
+
+    if (yaml["R_camera2gimbal"]) {
+      auto rc2g = tools::read<std::vector<double>>(yaml, "R_camera2gimbal");
+      if (rc2g.size() >= 9) {
+        R_camera2gimbal << rc2g[0], rc2g[1], rc2g[2], rc2g[3], rc2g[4], rc2g[5], rc2g[6], rc2g[7], rc2g[8];
+      }
+    }
+
+    if (yaml["R_gimbal2imubody"]) {
+      auto rg2i = tools::read<std::vector<double>>(yaml, "R_gimbal2imubody");
+      if (rg2i.size() >= 9) {
+        R_gimbal2imubody << rg2i[0], rg2i[1], rg2i[2], rg2i[3], rg2i[4], rg2i[5], rg2i[6], rg2i[7], rg2i[8];
+      }
+    }
+
+    R_imu2camera_ = (R_camera2gimbal * R_gimbal2imubody).transpose();
+
+    cv::Mat cam_mat, imu_mat;
+    cv::eigen2cv(camera_matrix_, cam_mat);
+    cv::eigen2cv(R_imu2camera_, imu_mat);
+    bullet_detector_.init(DoReproj(cam_mat, imu_mat));
+
     tools::logger()->info("BulletTrackingCorrector: initialized");
   } catch (const std::exception & e) {
     tools::logger()->error("BulletTrackingCorrector: Failed to load config: {}", e.what());
@@ -240,6 +264,7 @@ void BulletTrackingCorrector::update(double distance, double yaw, double pitch)
 {
   current_yaw_ = yaw;
   current_pitch_ = pitch;
+  sample_aim_errors();
 }
 
 void BulletTrackingCorrector::add_shoot_event(int id, const AimInfo & aim)
@@ -265,6 +290,8 @@ void BulletTrackingCorrector::set_gimbal_state(double yaw, double pitch, double 
   current_pitch_ = pitch;
   current_bullet_speed_ = bullet_speed;
 }
+
+void BulletTrackingCorrector::set_quaternion(const Eigen::Quaterniond & q) { current_q_ = q; }
 
 void BulletTrackingCorrector::update_bullet_id(int last_shoot_id)
 {
@@ -325,6 +352,28 @@ std::vector<std::pair<int, Eigen::Vector3d>> BulletTrackingCorrector::get_bullet
       it = bullets_.erase(it);
     } else {
       result.push_back({it->id, hit_pos.pos});
+      ++it;
+    }
+  }
+  return result;
+}
+
+std::vector<AimCorrector::BulletCircle> BulletTrackingCorrector::get_bullet_circles()
+{
+  std::vector<BulletCircle> result;
+  double t = get_current_time();
+
+  for (auto it = bullets_.begin(); it != bullets_.end();) {
+    if (t < it->proj->get_fire_t()) {
+      ++it;
+      continue;
+    }
+
+    HitCircle hit_circle = it->proj->get_circle_by_t(t);
+    if (hit_circle.hit) {
+      it = bullets_.erase(it);
+    } else {
+      result.push_back({it->id, hit_circle.center, hit_circle.radius});
       ++it;
     }
   }

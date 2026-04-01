@@ -138,8 +138,8 @@ aim_corrector:
     max_history: 15
   
   bullet_tracking:
-    sample_enabled: false
-    correction_enabled: false
+    sample_enabled: true
+    correction_enabled: true
     bullet_radius: 0.0085
     resistance_k: 0.01
     control_to_fire_latency: 0.05

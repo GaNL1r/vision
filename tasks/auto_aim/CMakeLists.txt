@@ -28,6 +28,7 @@ add_library(auto_aim OBJECT
     aim_corrector/accumulative_corrector.cpp
     aim_corrector/bullet_tracking_corrector.cpp
     aim_corrector/detect_bullet.cpp
+    aim_corrector/do_reproj.cpp
 )
 
 target_link_libraries(auto_aim io openvino::runtime tinympcstatic)

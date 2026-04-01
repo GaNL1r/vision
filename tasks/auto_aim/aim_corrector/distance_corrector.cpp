@@ -110,6 +110,15 @@ void DistanceCorrector::set_gimbal_state(double yaw, double pitch, double bullet
 {
 }
 
+void DistanceCorrector::set_quaternion(const Eigen::Quaterniond & q)
+{
+}
+
+std::vector<AimCorrector::BulletCircle> DistanceCorrector::get_bullet_circles()
+{
+  return {};
+}
+
 void DistanceCorrector::reset()
 {
   current_distance_ = 0.0;

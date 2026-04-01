@@ -8,6 +8,7 @@
 
 #include "io/camera.hpp"
 #include "io/gimbal/gimbal.hpp"
+#include "tasks/auto_aim/aim_corrector/aim_corrector.hpp"
 #include "tasks/auto_aim/planner/planner.hpp"
 #include "tasks/auto_aim/solver.hpp"
 #include "tasks/auto_aim/tracker.hpp"
@@ -49,6 +50,7 @@ int main(int argc, char * argv[])
   target_queue.push(std::nullopt);
 
   std::atomic<bool> quit = false;
+  std::atomic<int> shoot_id{0};
   auto plan_thread = std::thread([&]() {
     auto t0 = std::chrono::steady_clock::now();
     uint16_t last_bullet_count = 0;
@@ -63,6 +65,19 @@ int main(int argc, char * argv[])
         plan.pitch_acc);
 
       auto fired = gs.bullet_count > last_bullet_count;
+      if (fired && plan.control) {
+        int id = shoot_id.fetch_add(1);
+        auto_aim::AimInfo aim;
+        aim.ypd = Eigen::Vector2d(plan.target_yaw, plan.target_pitch);
+        aim.ypd_v = Eigen::Vector2d::Zero();
+        aim.shoot_param_v0 = gs.bullet_speed;
+        aim.aim_xyz = planner.debug_xyza.head<3>();
+        aim.shoot_mode = 0;
+
+        if (auto corrector = planner.get_corrector()) {
+          corrector->add_shoot_event(id, aim);
+        }
+      }
       last_bullet_count = gs.bullet_count;
 
       nlohmann::json data;
@@ -110,6 +125,13 @@ int main(int argc, char * argv[])
   while (!exiter.exit()) {
     camera.read(img, t);
     auto q = gimbal.q(t);
+    auto gs = gimbal.state();
+
+    if (auto corrector = planner.get_corrector()) {
+      corrector->set_image(img);
+      corrector->set_quaternion(q);
+      corrector->set_gimbal_state(gs.yaw, gs.pitch, gs.bullet_speed);
+    }
 
     solver.set_R_gimbal2world(q);
     auto armors = yolo.detect(img);
@@ -134,6 +156,16 @@ int main(int argc, char * argv[])
       auto image_points =
         solver.reproject_armor(aim_xyza.head(3), aim_xyza[3], target.armor_type, target.name);
       tools::draw_points(img, image_points, {0, 0, 255});
+    }
+
+    if (auto corrector = planner.get_corrector()) {
+      auto bullet_circles = corrector->get_bullet_circles();
+      for (const auto & bc : bullet_circles) {
+        cv::circle(img, bc.center, static_cast<int>(bc.radius), {255, 0, 0}, 2);
+        cv::putText(
+          img, std::to_string(bc.id), {static_cast<int>(bc.center.x + 10), static_cast<int>(bc.center.y)},
+          cv::FONT_HERSHEY_SIMPLEX, 0.5, {255, 0, 0}, 1);
+      }
     }
 
     cv::resize(img, img, {}, 0.5, 0.5);  // 显示时缩小图片尺寸

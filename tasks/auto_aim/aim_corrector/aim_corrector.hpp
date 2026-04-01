@@ -51,6 +51,16 @@ public:
 
   virtual void set_gimbal_state(double yaw, double pitch, double bullet_speed) = 0;
 
+  virtual void set_quaternion(const Eigen::Quaterniond & q) = 0;
+
+  struct BulletCircle
+  {
+    int id;
+    cv::Point2f center;
+    float radius;
+  };
+  virtual std::vector<BulletCircle> get_bullet_circles() = 0;
+
   virtual bool is_enabled() const = 0;
 
   virtual void reset() = 0;

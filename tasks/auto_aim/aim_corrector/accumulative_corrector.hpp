@@ -32,6 +32,10 @@ public:
 
   void set_gimbal_state(double yaw, double pitch, double bullet_speed) override;
 
+  void set_quaternion(const Eigen::Quaterniond & q) override;
+
+  std::vector<BulletCircle> get_bullet_circles() override;
+
   bool is_enabled() const override { return enabled_; }
 
   void reset() override;

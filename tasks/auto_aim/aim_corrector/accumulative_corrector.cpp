@@ -93,6 +93,15 @@ void AccumulativeCorrector::set_gimbal_state(double yaw, double pitch, double bu
   bullet_speed_ = bullet_speed;
 }
 
+void AccumulativeCorrector::set_quaternion(const Eigen::Quaterniond & q)
+{
+}
+
+std::vector<AimCorrector::BulletCircle> AccumulativeCorrector::get_bullet_circles()
+{
+  return {};
+}
+
 void AccumulativeCorrector::add_manual_sample(double yaw_error, double pitch_error, double distance)
 {
   if (!enabled_) return;

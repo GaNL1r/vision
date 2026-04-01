@@ -19,6 +19,8 @@ DetectBullet::DetectBullet()
   kernel2_ = cv::getStructuringElement(cv::MORPH_CROSS, KERNEL2_SIZE);
 }
 
+void DetectBullet::init(const DoReproj & do_reproj) { do_reproj_ = do_reproj; }
+
 bool DetectBullet::test_is_bullet_color(const cv::Vec3b & hsv_col)
 {
   return hsv_col[2] > 50 && std::abs(static_cast<int>(hsv_col[0]) - 50) < 10 + 0.5 * std::exp((hsv_col[1] + hsv_col[2]) / 100.0);
@@ -68,7 +70,11 @@ cv::Mat DetectBullet::get_frame_diff(
 void DetectBullet::get_possible()
 {
   cv::Mat lst_reproj;
-  cv::warpPerspective(lst_hsv_, lst_reproj, cv::Mat::eye(3, 3, CV_32F), lst_hsv_.size());
+  if (!lst_hsv_.empty()) {
+    lst_reproj = do_reproj_.reproj(lst_hsv_, lst_fr_q_, cur_fr_q_);
+  } else {
+    lst_reproj = cv::Mat::zeros(cur_hsv_.size(), cur_hsv_.type());
+  }
 
   cv::Mat res, msk_not_dark;
   cv::inRange(cur_hsv_, COLOR_LOWB, COLOR_UPB, res);

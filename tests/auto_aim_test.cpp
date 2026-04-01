@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <opencv2/opencv.hpp>
 
+#include "tasks/auto_aim/aim_corrector/aim_corrector.hpp"
 #include "tasks/auto_aim/planner/planner.hpp"
 #include "tasks/auto_aim/solver.hpp"
 #include "tasks/auto_aim/tracker.hpp"
@@ -50,6 +51,8 @@ int main(int argc, char * argv[])
   cv::Mat img, drawing;
   auto t0 = std::chrono::steady_clock::now();
   auto_aim::Plan last_plan;
+  bool last_fire = false;
+  int shoot_id = 0;
 
   video.set(cv::CAP_PROP_POS_FRAMES, start_index);
   for (int frame_count = start_index; !exiter.exit(); frame_count++) {
@@ -61,8 +64,16 @@ int main(int argc, char * argv[])
     double t, w, x, y, z;
     text >> t >> w >> x >> y >> z;
     auto timestamp = t0 + std::chrono::microseconds(int(t * 1e6));
+    Eigen::Quaterniond q{w, x, y, z};
 
-    solver.set_R_gimbal2world({w, x, y, z});
+    if (auto corrector = planner.get_corrector()) {
+      corrector->set_image(img);
+      corrector->set_quaternion(q);
+      corrector->set_gimbal_state(
+        tools::eulers(q, 2, 1, 0)[0], tools::eulers(q, 2, 1, 0)[1], 22.0);
+    }
+
+    solver.set_R_gimbal2world(q);
 
     auto yolo_start = std::chrono::steady_clock::now();
     auto armors = yolo.detect(img, frame_count);
@@ -77,6 +88,21 @@ int main(int argc, char * argv[])
     if (plan.control && std::abs(plan.yaw - last_plan.yaw) * 57.3 < 2) {
       plan.fire = true;
     }
+
+    bool fired = plan.fire && !last_fire;
+    if (fired && plan.control) {
+      auto_aim::AimInfo aim;
+      aim.ypd = Eigen::Vector2d(plan.target_yaw, plan.target_pitch);
+      aim.ypd_v = Eigen::Vector2d::Zero();
+      aim.shoot_param_v0 = 22.0;
+      aim.aim_xyz = planner.debug_xyza.head<3>();
+      aim.shoot_mode = 0;
+
+      if (auto corrector = planner.get_corrector()) {
+        corrector->add_shoot_event(shoot_id++, aim);
+      }
+    }
+    last_fire = plan.fire;
 
     if (plan.control) last_plan = plan;
 
@@ -94,11 +120,10 @@ int main(int argc, char * argv[])
         plan.pitch * 57.3, plan.fire),
       {10, 60}, {154, 50, 205});
 
-    Eigen::Quaternion gimbal_q = {w, x, y, z};
     tools::draw_text(
       img,
       fmt::format(
-        "gimbal yaw={:.2f}", (tools::eulers(gimbal_q.toRotationMatrix(), 2, 1, 0) * 57.3)[0]),
+        "gimbal yaw={:.2f}", (tools::eulers(q, 2, 1, 0) * 57.3)[0]),
       {10, 90}, {255, 255, 255});
 
     if (auto corrector = planner.get_corrector()) {
@@ -107,6 +132,14 @@ int main(int argc, char * argv[])
         img,
         fmt::format("correction: yaw={:.2f}, pitch={:.2f}", correction(0) * 57.3, correction(1) * 57.3),
         {10, 120}, {100, 200, 100});
+
+      auto bullet_circles = corrector->get_bullet_circles();
+      for (const auto & bc : bullet_circles) {
+        cv::circle(img, bc.center, static_cast<int>(bc.radius), {0, 0, 255}, 2);
+        cv::putText(
+          img, std::to_string(bc.id), {static_cast<int>(bc.center.x + 10), static_cast<int>(bc.center.y)},
+          cv::FONT_HERSHEY_SIMPLEX, 0.5, {0, 0, 255}, 1);
+      }
     }
 
     nlohmann::json data;
@@ -122,7 +155,6 @@ int main(int argc, char * argv[])
       data["armor_center_y"] = armor.center_norm.y;
     }
 
-    Eigen::Quaternion q{w, x, y, z};
     auto yaw = tools::eulers(q, 2, 1, 0)[0];
     data["gimbal_yaw"] = yaw * 57.3;
     data["plan_yaw"] = plan.yaw * 57.3;
@@ -172,7 +204,7 @@ int main(int argc, char * argv[])
 
     cv::resize(img, img, {}, 0.5, 0.5);
     cv::imshow("reprojection", img);
-    auto key = cv::waitKey(30);
+    auto key = cv::waitKey(0);
     if (key == 'q') break;
   }
 

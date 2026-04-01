@@ -4,6 +4,7 @@
 #include <Eigen/Geometry>
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include "do_reproj.hpp"
 
 namespace auto_aim
 {
@@ -21,7 +22,9 @@ class DetectBullet
 {
 public:
   DetectBullet();
-
+  
+  void init(const DoReproj & do_reproj);
+  
   std::vector<ImageBullet> process_new_frame(const cv::Mat & frame, const Eigen::Quaterniond & q);
 
   const std::vector<ImageBullet> & get_bullets() const { return bullets_; }
@@ -42,6 +45,8 @@ private:
 
   cv::Mat kernel1_;
   cv::Mat kernel2_;
+
+  DoReproj do_reproj_;
 
   std::vector<std::vector<cv::Point>> contours_;
   std::vector<std::vector<uint32_t>> sort_pts_;
