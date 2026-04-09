@@ -119,3 +119,6 @@ aim_time: 0.150         # s
 wait_time: 0.300        # s
 command_fire_gap: 0.080 # s
 predict_time: 0.150     # s
+
+window_17mm : 30
+window_42mm : 30
