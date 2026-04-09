@@ -267,12 +267,24 @@ bool Target::convergened()
 Eigen::Vector3d Target::h_armor_xyz(const Eigen::VectorXd & x, int id) const
 {
   auto angle = tools::limit_rad(x[6] + id * 2 * CV_PI / armor_num_);
-  auto use_l_h = (armor_num_ == 4) && (id == 1 || id == 3);
 
-  auto r = (use_l_h) ? x[8] + x[9] : x[8];
+  double r, armor_z;
+
+  if (armor_num_ == 4) {
+    auto use_l_h = (id == 1 || id == 3);
+    r = (use_l_h) ? x[8] + x[9] : x[8];
+    armor_z = (use_l_h) ? x[4] + x[10] : x[4];
+  } else if (armor_num_ == 3 && name == ArmorName::outpost) {
+    constexpr double OUTPOST_HEIGHT_STEP = 0.2;
+    r = x[8];
+    armor_z = x[4] - id * OUTPOST_HEIGHT_STEP;
+  } else {
+    r = x[8];
+    armor_z = x[4];
+  }
+
   auto armor_x = x[0] - r * std::cos(angle);
   auto armor_y = x[2] - r * std::sin(angle);
-  auto armor_z = (use_l_h) ? x[4] + x[10] : x[4];
 
   return {armor_x, armor_y, armor_z};
 }
