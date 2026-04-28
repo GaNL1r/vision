@@ -34,9 +34,9 @@ Target::Target(
   // x vx y vy z vz a w r l h
   // a: angle
   // w: angular velocity
-  // l: r2 - r1
-  // h: z2 - z1
-  Eigen::VectorXd x0{{center_x, 0, center_y, 0, center_z, 0, ypr[0], 0, r, 0, 0}};  //初始化预测量
+  // l: r2 - r1 (4装甲板) / z1 - z0 (前哨站)
+  // h: z2 - z1 (4装甲板) / z2 - z1 (前哨站)
+  Eigen::VectorXd x0{{center_x, 0, center_y, 0, center_z, 0, ypr[0], 0, r, 0, 0}};
   Eigen::MatrixXd P0 = P0_dig.asDiagonal();
 
   // 防止夹角求和出现异常值
@@ -241,6 +241,13 @@ std::vector<Eigen::Vector4d> Target::armor_xyza_list() const
 bool Target::diverged() const
 {
   auto r_ok = ekf_.x[8] > 0.05 && ekf_.x[8] < 0.5;
+
+  if (name == ArmorName::outpost) {
+    if (r_ok) return false;
+    tools::logger()->debug("[Target] r={:.3f}", ekf_.x[8]);
+    return true;
+  }
+
   auto l_ok = ekf_.x[8] + ekf_.x[9] > 0.05 && ekf_.x[8] + ekf_.x[9] < 0.5;
 
   if (r_ok && l_ok) return false;
@@ -275,9 +282,14 @@ Eigen::Vector3d Target::h_armor_xyz(const Eigen::VectorXd & x, int id) const
     r = (use_l_h) ? x[8] + x[9] : x[8];
     armor_z = (use_l_h) ? x[4] + x[10] : x[4];
   } else if (armor_num_ == 3 && name == ArmorName::outpost) {
-    constexpr double OUTPOST_HEIGHT_STEP = 0.2;
     r = x[8];
-    armor_z = x[4] - id * OUTPOST_HEIGHT_STEP;
+    if (id == 0) {
+      armor_z = x[4];
+    } else if (id == 1) {
+      armor_z = x[4] + x[9];
+    } else {
+      armor_z = x[4] + x[9] + x[10];
+    }
   } else {
     r = x[8];
     armor_z = x[4];
@@ -293,6 +305,7 @@ Eigen::MatrixXd Target::h_jacobian(const Eigen::VectorXd & x, int id) const
 {
   auto angle = tools::limit_rad(x[6] + id * 2 * CV_PI / armor_num_);
   auto use_l_h = (armor_num_ == 4) && (id == 1 || id == 3);
+  bool is_outpost = (armor_num_ == 3 && name == ArmorName::outpost);
 
   auto r = (use_l_h) ? x[8] + x[9] : x[8];
   auto dx_da = r * std::sin(angle);
@@ -303,14 +316,21 @@ Eigen::MatrixXd Target::h_jacobian(const Eigen::VectorXd & x, int id) const
   auto dx_dl = (use_l_h) ? -std::cos(angle) : 0.0;
   auto dy_dl = (use_l_h) ? -std::sin(angle) : 0.0;
 
-  auto dz_dh = (use_l_h) ? 1.0 : 0.0;
+  double dz_dh = 0.0;
+  double dz_dl_outpost = 0.0;
+  if (use_l_h) {
+    dz_dh = 1.0;
+  } else if (is_outpost) {
+    if (id >= 1) dz_dl_outpost = 1.0;
+    if (id == 2) dz_dh = 1.0;
+  }
 
   // clang-format off
   Eigen::MatrixXd H_armor_xyza{
-    {1, 0, 0, 0, 0, 0, dx_da, 0, dx_dr, dx_dl,     0},
-    {0, 0, 1, 0, 0, 0, dy_da, 0, dy_dr, dy_dl,     0},
-    {0, 0, 0, 0, 1, 0,     0, 0,     0,     0, dz_dh},
-    {0, 0, 0, 0, 0, 0,     1, 0,     0,     0,     0}
+    {1, 0, 0, 0, 0, 0, dx_da, 0, dx_dr, dx_dl,             0},
+    {0, 0, 1, 0, 0, 0, dy_da, 0, dy_dr, dy_dl,             0},
+    {0, 0, 0, 0, 1, 0,     0, 0,     0,     dz_dl_outpost, dz_dh},
+    {0, 0, 0, 0, 0, 0,     1, 0,     0,                 0,     0}
   };
   // clang-format on
 
