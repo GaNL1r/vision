@@ -93,31 +93,36 @@ void Target::predict(double dt)
 
   // Piecewise White Noise Model
   // https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/07-Kalman-Filter-Math.ipynb
-  double v1, v2;
+  double v1, v2, v3;
   if (name == ArmorName::outpost) {
-    v1 = 10;   // 前哨站加速度方差
-    v2 = 0.1;  // 前哨站角加速度方差
+    v1 = 10;    // 前哨站 xy 加速度方差
+    v2 = 0.1;   // 前哨站角加速度方差
+    v3 = 5e-2;  // 前哨站高度差过程噪声（随 dt^2 缩放，只前哨站生效）
   } else {
     v1 = 100;  // 加速度方差
     v2 = 400;  // 角加速度方差
+    v3 = 0.0;  // 其他兵种 x[9]/x[10] 不漂移
   }
+  // 前哨站 z 高度固定，x[4]/x[5] 过程噪声设为 0，防止 P[4][4] 累积
+  // 导致 x[4] 和 x[9]/x[10] 互相干扰、可观测性冲突
+  double v1_z = (name == ArmorName::outpost) ? 0.0 : v1;
   auto a = dt * dt * dt * dt / 4;
   auto b = dt * dt * dt / 2;
   auto c = dt * dt;
   // 预测过程噪声偏差的方差
   // clang-format off
   Eigen::MatrixXd Q{
-    {a * v1, b * v1,      0,      0,      0,      0,      0,      0, 0, 0, 0},
-    {b * v1, c * v1,      0,      0,      0,      0,      0,      0, 0, 0, 0},
-    {     0,      0, a * v1, b * v1,      0,      0,      0,      0, 0, 0, 0},
-    {     0,      0, b * v1, c * v1,      0,      0,      0,      0, 0, 0, 0},
-    {     0,      0,      0,      0, a * v1, b * v1,      0,      0, 0, 0, 0},
-    {     0,      0,      0,      0, b * v1, c * v1,      0,      0, 0, 0, 0},
-    {     0,      0,      0,      0,      0,      0, a * v2, b * v2, 0, 0, 0},
-    {     0,      0,      0,      0,      0,      0, b * v2, c * v2, 0, 0, 0},
-    {     0,      0,      0,      0,      0,      0,      0,      0, 0, 0, 0},
-    {     0,      0,      0,      0,      0,      0,      0,      0, 0, 0, 0},
-    {     0,      0,      0,      0,      0,      0,      0,      0, 0, 0, 0}
+    {a * v1,  b * v1,       0,       0,          0,          0,      0,      0, 0,        0,        0},
+    {b * v1,  c * v1,       0,       0,          0,          0,      0,      0, 0,        0,        0},
+    {     0,       0,  a * v1,  b * v1,          0,          0,      0,      0, 0,        0,        0},
+    {     0,       0,  b * v1,  c * v1,          0,          0,      0,      0, 0,        0,        0},
+    {     0,       0,       0,       0,  a * v1_z,  b * v1_z,        0,      0, 0,        0,        0},
+    {     0,       0,       0,       0,  b * v1_z,  c * v1_z,        0,      0, 0,        0,        0},
+    {     0,       0,       0,       0,          0,          0, a * v2, b * v2, 0,        0,        0},
+    {     0,       0,       0,       0,          0,          0, b * v2, c * v2, 0,        0,        0},
+    {     0,       0,       0,       0,          0,          0,      0,      0, 0,        0,        0},
+    {     0,       0,       0,       0,          0,          0,      0,      0, 0, c * v3,           0},
+    {     0,       0,       0,       0,          0,          0,      0,      0, 0,        0,  c * v3}
   };
   // clang-format on
 
@@ -128,8 +133,15 @@ void Target::predict(double dt)
     return x_prior;
   };
 
+  // 前哨站：中心固定不动，速度强制为0
+	if (name == ArmorName::outpost) {
+  	  	ekf_.x[1] = 0.0;  // vx
+    	ekf_.x[3] = 0.0;  // vy
+    	ekf_.x[5] = 0.0;  // vz
+	}
+
   // 前哨站转速特判
-  if (this->convergened() && this->name == ArmorName::outpost && std::abs(this->ekf_.x[7]) > 2)
+  if (this->convergened() && this->name == ArmorName::outpost && std::abs(this->ekf_.x[7]) > 4)
     this->ekf_.x[7] = this->ekf_.x[7] > 0 ? 2.51 : -2.51;
 
   ekf_.predict(F, Q, f);
@@ -241,11 +253,17 @@ std::vector<Eigen::Vector4d> Target::armor_xyza_list() const
 bool Target::diverged() const
 {
   auto r_ok = ekf_.x[8] > 0.05 && ekf_.x[8] < 0.5;
-  auto l_ok = ekf_.x[8] + ekf_.x[9] > 0.05 && ekf_.x[8] + ekf_.x[9] < 0.5;
 
-  if (r_ok && l_ok) return false;
+  if (name == ArmorName::outpost) {
+    auto dz01_ok = std::abs(ekf_.x[9]) < 0.5;
+    auto dz02_ok = std::abs(ekf_.x[10]) < 0.5;
+    if (r_ok && dz01_ok && dz02_ok) return false;
+  } else {
+    auto l_ok = ekf_.x[8] + ekf_.x[9] > 0.05 && ekf_.x[8] + ekf_.x[9] < 0.5;
+    if (r_ok && l_ok) return false;
+  }
 
-  tools::logger()->debug("[Target] r={:.3f}, l={:.3f}", ekf_.x[8], ekf_.x[9]);
+  tools::logger()->debug("[Target] r={:.3f}, x9={:.3f}, x10={:.3f}", ekf_.x[8], ekf_.x[9], ekf_.x[10]);
   return true;
 }
 
@@ -277,7 +295,9 @@ Eigen::Vector3d Target::h_armor_xyz(const Eigen::VectorXd & x, int id) const
   } else if (armor_num_ == 3 && name == ArmorName::outpost) {
     constexpr double OUTPOST_HEIGHT_STEP = 0.2;
     r = x[8];
-    armor_z = x[4] - id * OUTPOST_HEIGHT_STEP;
+    if (id == 1)      armor_z = x[4] + x[9];
+    else if (id == 2) armor_z = x[4] + x[10];
+    else              armor_z = x[4];
   } else {
     r = x[8];
     armor_z = x[4];
@@ -292,24 +312,41 @@ Eigen::Vector3d Target::h_armor_xyz(const Eigen::VectorXd & x, int id) const
 Eigen::MatrixXd Target::h_jacobian(const Eigen::VectorXd & x, int id) const
 {
   auto angle = tools::limit_rad(x[6] + id * 2 * CV_PI / armor_num_);
-  auto use_l_h = (armor_num_ == 4) && (id == 1 || id == 3);
 
-  auto r = (use_l_h) ? x[8] + x[9] : x[8];
+  double r, dx_dl, dy_dl, dz_d_dz01, dz_dh;
+
+  if (armor_num_ == 4) {
+    auto use_l_h = (id == 1 || id == 3);
+    r = (use_l_h) ? x[8] + x[9] : x[8];
+    dx_dl = (use_l_h) ? -std::cos(angle) : 0.0;
+    dy_dl = (use_l_h) ? -std::sin(angle) : 0.0;
+    dz_d_dz01 = 0.0;
+    dz_dh = (use_l_h) ? 1.0 : 0.0;
+  } else if (armor_num_ == 3 && name == ArmorName::outpost) {
+    r = x[8];
+    dx_dl = 0.0;
+    dy_dl = 0.0;
+    dz_d_dz01 = (id == 1) ? 1.0 : 0.0;
+    dz_dh = (id == 2) ? 1.0 : 0.0;
+  } else {
+    r = x[8];
+    dx_dl = 0.0;
+    dy_dl = 0.0;
+    dz_d_dz01 = 0.0;
+    dz_dh = 0.0;
+  }
+
   auto dx_da = r * std::sin(angle);
   auto dy_da = -r * std::cos(angle);
 
   auto dx_dr = -std::cos(angle);
   auto dy_dr = -std::sin(angle);
-  auto dx_dl = (use_l_h) ? -std::cos(angle) : 0.0;
-  auto dy_dl = (use_l_h) ? -std::sin(angle) : 0.0;
-
-  auto dz_dh = (use_l_h) ? 1.0 : 0.0;
 
   // clang-format off
   Eigen::MatrixXd H_armor_xyza{
     {1, 0, 0, 0, 0, 0, dx_da, 0, dx_dr, dx_dl,     0},
     {0, 0, 1, 0, 0, 0, dy_da, 0, dy_dr, dy_dl,     0},
-    {0, 0, 0, 0, 1, 0,     0, 0,     0,     0, dz_dh},
+    {0, 0, 0, 0, 1, 0,     0, 0,     0, dz_d_dz01, dz_dh},
     {0, 0, 0, 0, 0, 0,     1, 0,     0,     0,     0}
   };
   // clang-format on
